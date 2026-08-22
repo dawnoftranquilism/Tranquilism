@@ -97,6 +97,35 @@
         button[type="submit"]:hover {
             background-color: #004494;
         }
+        /* --- Mobile Adjustments --- */
+        @media (max-width: 768px) {
+            .container {
+                margin: 20px auto;
+                padding: 20px; /* Reduces the massive white space on small screens */
+                width: 90%; /* Keeps the box from touching the very edges of the phone */
+                box-sizing: border-box;
+            }
+            .navbar {
+                padding: 15px 5px;
+            }
+            .navbar .logo {
+                height: 60px; /* Shrinks the logo slightly for mobile */
+            }
+            .navbar-buttons {
+                gap: 8px; /* Brings the buttons closer together */
+            }
+            .navbar button {
+                font-size: 0.95rem; /* Scales the font down so it doesn't wrap awkwardly */
+                margin: 0 5px;
+            }
+            input, textarea {
+                width: 100%; /* Forces the contact forms to stay inside the box */
+                box-sizing: border-box;
+            }
+            h1 {
+                font-size: 2rem; /* Shrinks the main title */
+            }
+        }
     </style>
 </head>
 <body>
