@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tranquilism</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            /* Blue sky gradient background */
+            background: linear-gradient(to bottom, #87CEEB 0%, #e0f6ff 100%);
+            background-attachment: fixed;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        .navbar {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .navbar button {
+            background: none;
+            border: none;
+            font-size: 1.1rem;
+            margin: 0 15px;
+            cursor: pointer;
+            color: #555;
+            font-weight: bold;
+        }
+        .navbar button:hover, .navbar button.active {
+            color: #0056b3;
+            text-decoration: underline;
+        }
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        .update-post {
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        input, textarea {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-family: inherit;
+        }
+        button[type="submit"] {
+            background-color: #0056b3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        button[type="submit"]:hover {
+            background-color: #004494;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation Tabs -->
+    <div class="navbar">
+        <button class="tab-btn active" onclick="openTab('home')">Tranquilism</button>
+        <button class="tab-btn" onclick="openTab('updates')">Updates</button>
+        <button class="tab-btn" onclick="openTab('email')">Join Email List</button>
+        <button class="tab-btn" onclick="openTab('contact')">Contact</button>
+    </div>
+
+    <div class="container">
+        <!-- 1. Home / Landing Page -->
+        <div id="home" class="tab-content active">
+            <h1>Tranquilism</h1>
+            <p>Welcome to the official home of Tranquilism. Here you can explore the foundations of the philosophy, read excerpts from the upcoming <em>Discourse of the Tranquilist</em>, and follow along with the latest developments.</p>
+        </div>
+
+        <!-- 2. Updates Feed -->
+        <div id="updates" class="tab-content">
+            <h2>Recent Updates</h2>
+            <!-- To add a new update, simply copy this update-post block and paste a new one above it -->
+            <div class="update-post">
+                <strong>August 2026</strong>
+                <p>Website officially launched. Stay tuned for further manuscript excerpts and developments.</p>
+            </div>
+        </div>
+
+        <!-- 3. Join Email List -->
+        <div id="email" class="tab-content">
+            <h2>Join the Email List</h2>
+            <p>Subscribe to receive the latest updates, essays, and news directly to your inbox.</p>
+            <!-- FormSubmit routes to your email -->
+            <form action="https://formsubmit.co/dawnoftranquilism@gmail.com" method="POST">
+                <input type="hidden" name="_subject" value="New Email List Subscriber!">
+                <input type="hidden" name="_next" value="https://dawnoftranquilism.github.io">
+                <input type="email" name="email" placeholder="Your Email Address" required>
+                <button type="submit">Subscribe</button>
+            </form>
+        </div>
+
+        <!-- 4. Contact Form -->
+        <div id="contact" class="tab-content">
+            <h2>Contact</h2>
+            <p>Send a message directly to the author. Maximum 3000 characters.</p>
+            <form action="https://formsubmit.co/dawnoftranquilism@gmail.com" method="POST">
+                <input type="hidden" name="_subject" value="New Website Contact Form Submission">
+                <input type="hidden" name="_next" value="https://dawnoftranquilism.github.io">
+                <input type="text" name="name" placeholder="Your Name" required>
+                <input type="email" name="email" placeholder="Your Email" required>
+                <!-- Maxlength enforces the 3000 character limit -->
+                <textarea name="message" rows="8" maxlength="3000" placeholder="Type your message here (3000 characters max)..." required></textarea>
+                <button type="submit">Send Message</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript for Tab Switching -->
+    <script>
+        function openTab(tabId) {
+            // Hide all tab content
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => content.classList.remove('active'));
+
+            // Remove active class from all buttons
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(button => button.classList.remove('active'));
+
+            // Show the selected tab and highlight the button
+            document.getElementById(tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+    </script>
+
+</body>
+</html>
