@@ -265,6 +265,14 @@
         </div>
     </div>
 
+<!-- Bottom Navigation -->
+    <div class="footer-nav">
+        <button class="tab-btn active" onclick="openTab('home')">Tranquilism</button>
+        <button class="tab-btn" onclick="openTab('updates')">Updates</button>
+        <button class="tab-btn" onclick="openTab('email')">Join Email List</button>
+        <button class="tab-btn" onclick="openTab('contact')">Contact</button>
+    </div>
+
     <!-- JavaScript for Tab Switching -->
     <script>
         function openTab(tabId) {
@@ -272,13 +280,19 @@
             const contents = document.querySelectorAll('.tab-content');
             contents.forEach(content => content.classList.remove('active'));
 
-            // Remove active class from all buttons
+            // Remove active class from ALL buttons (top and bottom)
             const buttons = document.querySelectorAll('.tab-btn');
             buttons.forEach(button => button.classList.remove('active'));
 
-            // Show the selected tab and highlight the button
+            // Show the selected tab
             document.getElementById(tabId).classList.add('active');
-            event.currentTarget.classList.add('active');
+            
+            // Highlight BOTH the top and bottom buttons for the active tab
+            const activeButtons = document.querySelectorAll(`button[onclick="openTab('${tabId}')"]`);
+            activeButtons.forEach(btn => btn.classList.add('active'));
+            
+            // Optional: scroll back to top of the container when clicking a bottom link
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     </script>
 
