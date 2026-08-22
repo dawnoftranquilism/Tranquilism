@@ -5,16 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tranquilism</title>
     <style>
-        body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            /* Tiled image background */
+        /* Fixed Background Layer for Mobile & Desktop */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background-image: url('sky-and-clouds-background.jpg');
             background-repeat: repeat;
-            background-attachment: fixed; /* Keeps the clouds in place while you scroll */
-            color: #333;
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
+            z-index: -1; 
         }
 .navbar {
             /* Changed to column layout to stack logo above buttons */
