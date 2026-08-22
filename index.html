@@ -97,33 +97,57 @@
         button[type="submit"]:hover {
             background-color: #004494;
         }
-        /* --- Mobile Adjustments --- */
+        .footer-nav {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 40px;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+        }
+        .footer-nav button {
+            background: none;
+            border: none;
+            font-size: 1.1rem;
+            cursor: pointer;
+            color: #555;
+            font-weight: bold;
+            padding: 5px 10px;
+        }
+        .footer-nav button:hover, .footer-nav button.active {
+            color: #0056b3;
+            text-decoration: underline;
+        }
+       /* --- Mobile Adjustments --- */
         @media (max-width: 768px) {
             .container {
                 margin: 20px auto;
-                padding: 20px; /* Reduces the massive white space on small screens */
-                width: 90%; /* Keeps the box from touching the very edges of the phone */
+                padding: 20px;
+                width: 90%;
                 box-sizing: border-box;
             }
             .navbar {
                 padding: 15px 5px;
             }
             .navbar .logo {
-                height: 60px; /* Shrinks the logo slightly for mobile */
+                height: 60px;
             }
             .navbar-buttons {
-                gap: 8px; /* Brings the buttons closer together */
+                gap: 2px; /* Much tighter gap */
             }
-            .navbar button {
-                font-size: 0.95rem; /* Scales the font down so it doesn't wrap awkwardly */
-                margin: 0 5px;
+            .navbar button, .footer-nav button {
+                font-size: 0.85rem; /* Slightly smaller text to fit neatly */
+                margin: 0; /* Removes all extra spacing */
+                padding: 5px; /* Minimal padding */
             }
             input, textarea {
-                width: 100%; /* Forces the contact forms to stay inside the box */
+                width: 100%;
                 box-sizing: border-box;
             }
             h1 {
-                font-size: 2rem; /* Shrinks the main title */
+                font-size: 2rem;
             }
         }
     </style>
