@@ -16,30 +16,34 @@
             padding: 0;
             min-height: 100vh;
         }
-       .navbar {
+.navbar {
+            /* Changed to column layout to stack logo above buttons */
             background-color: rgba(255, 255, 255, 0.9);
-            padding: 10px 20px;
+            padding: 20px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            display: flex; /* Enables flexible layout */
-            align-items: center; /* Centers items vertically */
-            justify-content: space-between; /* Pushes logo left, buttons right */
+            display: flex;
+            flex-direction: column; 
+            align-items: center; 
         }
         .navbar .logo {
-            height: 50px; /* Adjust this number to make the logo larger or smaller */
+            height: 80px; /* Made slightly larger for a banner feel */
             width: auto;
+            margin-bottom: 15px; /* Adds space between logo and buttons */
         }
         .navbar-buttons {
             display: flex;
-            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap; /* Allows buttons to wrap on small screens */
+            gap: 15px; /* Adds consistent spacing between buttons */
         }
         .navbar button {
             background: none;
             border: none;
             font-size: 1.1rem;
-            margin: 0 15px;
             cursor: pointer;
             color: #555;
             font-weight: bold;
+            padding: 5px 10px;
         }
         .navbar button:hover, .navbar button.active {
             color: #0056b3;
@@ -48,10 +52,12 @@
         .container {
             max-width: 800px;
             margin: 40px auto;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 30px;
+            /* Changed from 0.95 (almost solid) to 0.75 (transparent) */
+            background: rgba(255, 255, 255, 0.75); 
+            padding: 40px;
             border-radius: 10px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            backdrop-filter: blur(5px); /* Adds a slight blur to the clouds behind the text */
         }
         .tab-content {
             display: none;
