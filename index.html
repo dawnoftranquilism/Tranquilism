@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tranquilism</title>
     <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <style>
         body {
             font-family: 'Helvetica Neue', Arial, sans-serif;
@@ -131,6 +132,19 @@
             color: #0056b3;
             text-decoration: underline;
         }
+        .social-icons {
+            display: flex;
+            gap: 25px; /* Spacing between icons */
+        }
+        .social-icons a {
+            color: #555; /* Default icon color */
+            font-size: 1.8rem; /* Icon size */
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+        .social-icons a:hover {
+            color: #0056b3; /* Turns blue when hovered */
+        }
        /* --- Mobile Adjustments --- */
         @media (max-width: 768px) {
             .container {
@@ -240,12 +254,23 @@
             <h2>Recent Updates</h2>
             <!-- To add a new update, simply copy this update-post block and paste a new one above it -->
             <div class="update-post">
-                <strong>August 2026</strong>
-                <p>Website officially launched. Stay tuned for further manuscript excerpts and developments.</p>
+                <strong>August 24, 2026</strong>
+                <p>Our digital footprint is expanding. The official Tranquilism communities and channels are now live across multiple platforms. More to come! Join the conversation and follow our progress:</p>
+                <ul>
+                    <li><a href="https://www.youtube.com/channel/UC6okFnrHZKjmLMnAYrTY7GQ" target="_blank">Subscribe on YouTube</a></li>
+                    <li><a href="https://instagram.com/dawnoftranquilism" target="_blank">Follow on Instagram</a></li>
+                    <li><a href="https://bsky.app/profile/tranquilism.bsky.social" target="_blank">Connect on Bluesky</a></li>
+                    <li><a href="https://x.com/tranquilistsuni?s=11" target="_blank">Follow on X</a></li>
+                    <li><a href="https://www.reddit.com/u/Tranquility-Now/s/3vzzFn1ZZK" target="_blank">Join the discussion on Reddit</a></li>
+                </ul>
             </div>
-            <div class="update-post">
+                        <div class="update-post">
                 <strong>August 22 2026</strong>
                 <p>The Architecture of Modern Scarcity published! I can't wait to hear what you think!</p>
+            </div>
+            <div class="update-post">
+                <strong>August 2026</strong>
+                <p>Website officially launched. Stay tuned for further manuscript excerpts and developments.</p>
             </div>
         </div>
 
@@ -280,12 +305,22 @@
 
 <!-- Bottom Navigation -->
     <div class="footer-nav">
-        <button class="tab-btn active" onclick="openTab('home')">Tranquilism</button>
-        <button class="tab-btn" onclick="openTab('updates')">Updates</button>
-        <button class="tab-btn" onclick="openTab('email')">Join Email List</button>
-        <button class="tab-btn" onclick="openTab('contact')">Contact</button>
+        <div class="footer-buttons">
+            <button class="tab-btn active" onclick="openTab('home')">Tranquilism</button>
+            <button class="tab-btn" onclick="openTab('updates')">Updates</button>
+            <button class="tab-btn" onclick="openTab('email')">Join Email List</button>
+            <button class="tab-btn" onclick="openTab('contact')">Contact</button>
+        </div>
+        
+        <!-- Social Media Icons -->
+        <div class="social-icons">
+            <a href="https://www.youtube.com/channel/UC6okFnrHZKjmLMnAYrTY7GQ" target="_blank" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
+            <a href="https://instagram.com/dawnoftranquilism" target="_blank" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+            <a href="https://bsky.app/profile/tranquilism.bsky.social" target="_blank" title="Bluesky"><i class="fa-brands fa-bluesky"></i></a>
+            <a href="https://x.com/tranquilistsuni?s=11" target="_blank" title="X (Twitter)"><i class="fa-brands fa-x-twitter"></i></a>
+            <a href="https://www.reddit.com/u/Tranquility-Now/s/3vzzFn1ZZK" target="_blank" title="Reddit"><i class="fa-brands fa-reddit"></i></a>
+        </div>
     </div>
-
     <!-- JavaScript for Tab Switching -->
     <script>
         function openTab(tabId) {
