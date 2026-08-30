@@ -54,8 +54,6 @@
       ]
     }
     </script>
-
-    <!-- Your existing CSS starts below -->
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <style>
@@ -79,7 +77,6 @@
             z-index: -1; 
         }
 .navbar {
-            /* Changed to column layout to stack logo above buttons */
             background-color: rgba(255, 255, 255, 0.9);
             padding: 20px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
@@ -88,17 +85,17 @@
             align-items: center; 
         }
 .navbar .logo {
-            width: 100%; /* Forces the banner to span the full width */
-            max-width: 800px; /* Prevents it from getting absurdly large on ultrawide monitors */
-            height: auto; /* Maintains the 6000x794 aspect ratio */
+            width: 100%; 
+            max-width: 800px; 
+            height: auto; 
             margin-bottom: 20px; 
-            display: block; /* Ensures proper alignment */
+            display: block; 
         }
         .navbar-buttons {
             display: flex;
             justify-content: center;
-            flex-wrap: wrap; /* Allows buttons to wrap on small screens */
-            gap: 15px; /* Adds consistent spacing between buttons */
+            flex-wrap: wrap; 
+            gap: 15px; 
         }
         .navbar button {
             background: none;
@@ -116,12 +113,11 @@
         .container {
             max-width: 800px;
             margin: 40px auto;
-            /* Changed from 0.95 (almost solid) to 0.75 (transparent) */
             background: rgba(255, 255, 255, 0.75); 
             padding: 40px;
             border-radius: 10px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            backdrop-filter: blur(5px); /* Adds a slight blur to the clouds behind the text */
+            backdrop-filter: blur(5px); 
         }
         .tab-content {
             display: none;
@@ -165,7 +161,7 @@
             background-color: rgba(255, 255, 255, 0.9);
             padding: 20px;
             display: flex;
-            flex-direction: column; /* This stacks the buttons on top of the icons */
+            flex-direction: column;
             align-items: center;
             gap: 20px; 
             margin-top: 40px;
@@ -186,16 +182,16 @@
         }
         .social-icons {
             display: flex;
-            gap: 25px; /* Spacing between icons */
+            gap: 25px;
         }
         .social-icons a {
-            color: #555; /* Default icon color */
-            font-size: 1.8rem; /* Icon size */
+            color: #555; 
+            font-size: 1.8rem; 
             text-decoration: none;
             transition: color 0.2s ease;
         }
         .social-icons a:hover {
-            color: #0056b3; /* Turns blue when hovered */
+            color: #0056b3; 
         }
        /* --- Mobile Adjustments --- */
         @media (max-width: 768px) {
@@ -210,16 +206,16 @@
             }
            .navbar .logo {
                 width: 100%;
-                height: auto; /* Let it scale naturally based on the phone's width */
+                height: auto; 
                 margin-bottom: 15px;
             }
             .navbar-buttons {
-                gap: 2px; /* Much tighter gap */
+                gap: 2px; 
             }
             .navbar button, .footer-nav button {
-                font-size: 0.85rem; /* Slightly smaller text to fit neatly */
-                margin: 0; /* Removes all extra spacing */
-                padding: 5px; /* Minimal padding */
+                font-size: 0.85rem; 
+                margin: 0; 
+                padding: 5px; 
             }
             input, textarea {
                 width: 100%;
@@ -301,21 +297,6 @@
 </article>
         </div>
 
-        <!-- 2. Updates Feed -->
-        <div id="updates" class="tab-content">
-            <h2>Recent Updates</h2>
-            <!-- To add a new update, simply copy this update-post block and paste a new one above it -->
-            <div class="update-post">
-                <strong>August 24, 2026</strong>
-                <p>Our digital footprint is expanding. The official Tranquilism communities and channels are now live across multiple platforms. More to come! Join the conversation and follow our progress:</p>
-                <ul>
-                    <li><a href="https://www.youtube.com/channel/UC6okFnrHZKjmLMnAYrTY7GQ" target="_blank">Subscribe on YouTube</a></li>
-                    <li><a href="https://instagram.com/dawnoftranquilism" target="_blank">Follow on Instagram</a></li>
-                    <li><a href="https://bsky.app/profile/tranquilism.bsky.social" target="_blank">Connect on Bluesky</a></li>
-                    <li><a href="https://x.com/tranquilistsuni?s=11" target="_blank">Follow on X</a></li>
-                    <li><a href="https://www.reddit.com/u/Tranquility-Now/s/3vzzFn1ZZK" target="_blank">Join the discussion on Reddit</a></li>
-                </ul>
-            </div>
 <!-- 2. Updates Feed -->
 <div id="updates" class="tab-content">
     <h2>Recent Updates</h2>
