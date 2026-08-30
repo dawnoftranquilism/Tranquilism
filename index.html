@@ -385,14 +385,13 @@
             // Optional: scroll back to top of the container when clicking a bottom link
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-        fetch('https://api.counterapi.dev/v2/dawnoftranquilism/tranquilism/up')
+        // Invisible Text-Based Visitor Counter
+        fetch('https://countapi.mileshilliard.com/api/v1/hit/dawnoftranquilism/visits')
             .then(response => response.json())
             .then(data => {
-                // Look for the number under the three most common API labels
-                const hitCount = data.count || data.value || data.data;
-                
-                if (hitCount) {
-                    document.getElementById('visitor-count').innerText = hitCount;
+                // This new server returns the number under the label 'value'
+                if (data.value) {
+                    document.getElementById('visitor-count').innerText = data.value;
                 } else {
                     console.log("Counter API returned this instead of a number:", data);
                     document.getElementById('visitor-count').innerText = "service unavailable";
