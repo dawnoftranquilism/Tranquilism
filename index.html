@@ -385,9 +385,7 @@
             // Optional: scroll back to top of the container when clicking a bottom link
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-        
-        // Invisible Text-Based Visitor Counter
-        fetch('https://api.counterapi.dev/v1/dawnoftranquilism/tranquilism/up')
+        fetch('https://api.counterapi.dev/v2/dawnoftranquilism/tranquilism/up')
             .then(response => response.json())
             .then(data => {
                 // Look for the number under the three most common API labels
@@ -396,13 +394,11 @@
                 if (hitCount) {
                     document.getElementById('visitor-count').innerText = hitCount;
                 } else {
-                    // If no number is found, print the server's hidden message to the console
                     console.log("Counter API returned this instead of a number:", data);
                     document.getElementById('visitor-count').innerText = "service unavailable";
                 }
             })
             .catch(error => {
-                // What to show if a strict ad-blocker stops the connection entirely
                 document.getElementById('visitor-count').innerText = "hidden by privacy settings";
             });
     </script>
