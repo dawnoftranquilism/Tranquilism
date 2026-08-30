@@ -386,14 +386,12 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         // Invisible Text-Based Visitor Counter
-        fetch('https://countapi.mileshilliard.com/api/v1/hit/dawnoftranquilism/visits')
+        fetch('https://script.google.com/macros/s/AKfycby-Dgn2Hp5rg8IE4prj2WEWfV6uOS_jT23nFmauhwVZ2otuT-D72vqD0uE9PlpApWxD/exec')
             .then(response => response.json())
             .then(data => {
-                // This new server returns the number under the label 'value'
-                if (data.value) {
-                    document.getElementById('visitor-count').innerText = data.value;
+                if (data.count) {
+                    document.getElementById('visitor-count').innerText = data.count;
                 } else {
-                    console.log("Counter API returned this instead of a number:", data);
                     document.getElementById('visitor-count').innerText = "service unavailable";
                 }
             })
