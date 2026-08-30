@@ -316,15 +316,14 @@
                     <li><a href="https://www.reddit.com/u/Tranquility-Now/s/3vzzFn1ZZK" target="_blank">Join the discussion on Reddit</a></li>
                 </ul>
             </div>
-                        <div class="update-post">
-                <strong>August 22 2026</strong>
-                <p>The Architecture of Modern Scarcity published! I can't wait to hear what you think!</p>
-            </div>
-            <div class="update-post">
-                <strong>August 2026</strong>
-                <p>Website officially launched. Stay tuned for further manuscript excerpts and developments.</p>
-            </div>
-        </div>
+<!-- 2. Updates Feed -->
+<div id="updates" class="tab-content">
+    <h2>Recent Updates</h2>
+    
+    <div id="updates-feed">
+        <p>Loading updates...</p>
+    </div>
+</div>
 
         <!-- 3. Join Email List -->
         <div id="email" class="tab-content">
@@ -397,6 +396,35 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     </script>
+        <!-- JavaScript for Dynamic Updates Feed -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const feedUrl = 'updates.json?v=' + new Date().getTime();
+
+        fetch(feedUrl)
+            .then(response => response.json())
+            .then(data => {
+                const feedContainer = document.getElementById('updates-feed');
+                feedContainer.innerHTML = ''; 
+
+                data.forEach(update => {
+                    const item = document.createElement('div');
+                    item.className = 'update-post';
+                    
+                    item.innerHTML = `
+                        <strong>${update.date}</strong>
+                        <p>${update.message}</p>
+                    `;
+                    
+                    feedContainer.appendChild(item);
+                });
+            })
+            .catch(error => {
+                document.getElementById('updates-feed').innerHTML = '<p>Feed currently unavailable.</p>';
+                console.error('Error fetching updates:', error);
+            });
+    });
+</script>
 
 </body>
 </html>
