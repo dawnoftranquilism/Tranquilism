@@ -119,6 +119,20 @@
             </div>
             
             <div id="logged-in-menu" style="display: none; align-items: center; gap: 5px;">
+                
+                <!-- NEW: Notifications Bell -->
+                <div id="notifications-wrapper" style="position: relative; margin-right: 10px;">
+                    <button onclick="toggleNotifications()" style="background:none; border:none; font-size: 1.3rem; color: #555; cursor: pointer; position: relative;" title="Notifications">
+                        <i class="fa-solid fa-bell"></i>
+                        <span id="notif-badge" style="display:none; position: absolute; top: -5px; right: -5px; background: #e74c3c; color: white; border-radius: 50%; padding: 2px 5px; font-size: 0.7rem; font-weight: bold;">0</span>
+                    </button>
+                    <!-- Dropdown -->
+                    <div id="notif-dropdown" style="display:none; position: absolute; right: -50px; top: 35px; width: 280px; background: white; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); z-index: 1001; max-height: 400px; overflow-y: auto; text-align: left;">
+                        <div style="padding: 10px; font-weight: bold; border-bottom: 1px solid #eee; background: #f8f9fa;">Notifications</div>
+                        <div id="notif-list"></div>
+                    </div>
+                </div>
+
                 <div id="user-greeting" class="user-greeting" onclick="goToMyProfile()">
                     <img id="header-avatar" src="https://via.placeholder.com/30" alt="Avatar">
                     <span id="header-username">Hi, User</span>
@@ -384,7 +398,6 @@
                 else document.getElementById('visitor-count').innerText = "service unavailable";
             })
             .catch(() => document.getElementById('visitor-count').innerText = "hidden by privacy settings");
-
     </script>
 
     <!-- Updates Feed -->
@@ -451,6 +464,7 @@
                 if (session) {
                     loginArea.style.display = 'none';
                     greetingArea.style.display = 'flex';
+                    document.getElementById('notifications-wrapper').style.display = 'block';
 
                     const { data: profile } = await supabaseClient
                         .from('profiles')
@@ -467,6 +481,9 @@
                         configSec.style.display = 'none';
                         dashSec.style.display = 'block';
 
+                        // Fetch Notifications!
+                        fetchNotifications();
+
                         if (document.getElementById('community').classList.contains('active')) {
                             const activeFeed = document.getElementById('btn-joined-feed').classList.contains('active') ? 'joined' : 'public';
                             fetchCommunityPosts(activeFeed);
@@ -481,6 +498,7 @@
                 } else {
                     loginArea.style.display = 'inline-block';
                     greetingArea.style.display = 'none';
+                    document.getElementById('notifications-wrapper').style.display = 'none';
                     authSec.style.display = 'block';
                     configSec.style.display = 'none';
                     dashSec.style.display = 'none';
@@ -488,6 +506,90 @@
                 }
             } catch(e) {
                 console.error("Error updating UI:", e);
+            }
+        }
+
+        // --- Notifications Logic ---
+        async function fetchNotifications() {
+            if (!currentSession) return;
+            
+            const { data: notifs } = await supabaseClient.from('notifications')
+                .select('*')
+                .eq('recipient_id', currentSession.user.id)
+                .order('created_at', { ascending: false })
+                .limit(20);
+                
+            if (!notifs) return;
+            
+            const unreadCount = notifs.filter(n => !n.is_read).length;
+            const badge = document.getElementById('notif-badge');
+            
+            if (unreadCount > 0) {
+                badge.innerText = unreadCount;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+            
+            const list = document.getElementById('notif-list');
+            if (notifs.length === 0) {
+                list.innerHTML = '<div style="padding: 15px; text-align: center; color: #888;">No notifications yet.</div>';
+                return;
+            }
+
+            const actorIds = [...new Set(notifs.map(n => n.actor_id))];
+            const { data: profiles } = await supabaseClient.from('profiles').select('id, username, avatar_url').in('id', actorIds);
+            const profileMap = {};
+            if (profiles) profiles.forEach(p => profileMap[p.id] = p);
+            
+            list.innerHTML = '';
+            notifs.forEach(n => {
+                const actor = profileMap[n.actor_id] || { username: 'Someone', avatar_url: 'https://via.placeholder.com/30' };
+                let actionText = '';
+                if(n.type === 'resonate') actionText = 'resonated with your post';
+                else if(n.type === 'sympathy') actionText = 'sent sympathy to your post';
+                else if(n.type === 'comment') actionText = 'commented on your post';
+                
+                const div = document.createElement('div');
+                div.style.padding = '10px 15px';
+                div.style.borderBottom = '1px solid #eee';
+                div.style.display = 'flex';
+                div.style.gap = '10px';
+                div.style.alignItems = 'center';
+                div.style.cursor = 'pointer';
+                div.style.backgroundColor = n.is_read ? 'white' : '#f0f8ff';
+                
+                div.onclick = async () => {
+                    toggleNotifications();
+                    await supabaseClient.from('notifications').update({ is_read: true }).eq('id', n.id);
+                    window.history.pushState({}, '', '?p=' + n.post_id);
+                    handleURLRouting();
+                    fetchNotifications();
+                };
+                
+                div.innerHTML = `
+                    <img src="${actor.avatar_url}" style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover;">
+                    <div style="font-size: 0.9rem; color: #333; line-height: 1.3;">
+                        <b style="color: #0056b3;">@${actor.username}</b> ${actionText}
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        async function toggleNotifications() {
+            const el = document.getElementById('notif-dropdown');
+            if (el.style.display === 'none') {
+                el.style.display = 'block';
+                // Mark all read when opened
+                if (currentSession) {
+                    await supabaseClient.from('notifications').update({ is_read: true }).eq('recipient_id', currentSession.user.id).eq('is_read', false);
+                    document.getElementById('notif-badge').style.display = 'none';
+                    // We don't immediately refresh list so they stay highlighted for a moment
+                }
+            } else {
+                el.style.display = 'none';
+                fetchNotifications(); // Refresh list styles when closed
             }
         }
 
@@ -750,41 +852,133 @@
             }
         }
 
-        // --- Reaction Logic ---
-        async function toggleReaction(postId, reactionType, isCurrentlyActive) {
-            if (!currentSession) {
-                alert("Please log in to react to posts.");
-                return;
-            }
-
-            if (isCurrentlyActive) {
-                await supabaseClient.from('post_reactions').delete()
-                    .eq('post_id', postId)
-                    .eq('user_id', currentSession.user.id)
-                    .eq('reaction_type', reactionType);
-            } else {
-                await supabaseClient.from('post_reactions').insert([
-                    { post_id: postId, user_id: currentSession.user.id, reaction_type: reactionType }
-                ]);
-            }
-
-            // Refresh the specific feed we are looking at to update the numbers/colors
+        // --- NEW: Universal Refresh Function ---
+        function refreshCurrentView() {
             if (document.getElementById('community').classList.contains('active')) {
                 const activeFeed = document.getElementById('btn-joined-feed').classList.contains('active') ? 'joined' : 'public';
                 fetchCommunityPosts(activeFeed);
-            } else if (document.getElementById('user-profile').classList.contains('active')) {
-                // If viewing a profile, grab the ID of that profile based on the URL or target to refresh
+            } else if (currentProfile && document.getElementById('user-profile').classList.contains('active')) {
                 const urlParams = new URLSearchParams(window.location.search);
                 const currentViewUsername = urlParams.get('u');
                 if (currentViewUsername) {
-                    const { data: p } = await supabaseClient.from('profiles').select('id').eq('username', currentViewUsername).single();
-                    if (p) fetchUserPosts(p.id);
-                } else if (currentProfile) {
-                    fetchUserPosts(currentProfile.id);
+                    supabaseClient.from('profiles').select('id').eq('username', currentViewUsername).single().then(({data}) => {
+                        if(data) fetchUserPosts(data.id);
+                    });
+                } else {
+                    fetchUserPosts(currentSession.user.id);
                 }
             } else if (document.getElementById('single-post-view').classList.contains('active')) {
-                loadSinglePost(postId);
+                const urlParams = new URLSearchParams(window.location.search);
+                const currentPost = urlParams.get('p');
+                if (currentPost) loadSinglePost(currentPost);
             }
+        }
+
+        // --- Reactions & Comments Logic ---
+        async function toggleReaction(postId, postOwnerId, reactionType, isCurrentlyActive) {
+            if (!currentSession) return alert("Please log in to react.");
+
+            if (isCurrentlyActive) {
+                await supabaseClient.from('post_reactions').delete()
+                    .eq('post_id', postId).eq('user_id', currentSession.user.id).eq('reaction_type', reactionType);
+            } else {
+                await supabaseClient.from('post_reactions').insert([{ post_id: postId, user_id: currentSession.user.id, reaction_type: reactionType }]);
+                
+                // Trigger notification if not reacting to own post
+                if (currentSession.user.id !== postOwnerId) {
+                    await supabaseClient.from('notifications').insert([{ recipient_id: postOwnerId, actor_id: currentSession.user.id, post_id: postId, type: reactionType }]);
+                }
+            }
+            refreshCurrentView();
+        }
+
+        async function addComment(postId, postOwnerId) {
+            const input = document.getElementById('comment-input-' + postId);
+            const content = input.value.trim();
+            if (!content) return;
+            
+            await supabaseClient.from('comments').insert([{ post_id: postId, user_id: currentSession.user.id, content: content }]);
+            
+            if (currentSession.user.id !== postOwnerId) {
+                await supabaseClient.from('notifications').insert([{ recipient_id: postOwnerId, actor_id: currentSession.user.id, post_id: postId, type: 'comment' }]);
+            }
+            refreshCurrentView();
+        }
+
+        window.toggleCommentSection = function(postId) {
+            const el = document.getElementById('comments-section-' + postId);
+            el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+        }
+
+        // --- Generating the HTML for a Post (Used everywhere) ---
+        function generatePostHTML(post, authorData, profileMap) {
+            const date = new Date(post.created_at).toLocaleDateString();
+            
+            // Calculate Reactions
+            const resonates = post.post_reactions ? post.post_reactions.filter(r => r.reaction_type === 'resonate') : [];
+            const sympathies = post.post_reactions ? post.post_reactions.filter(r => r.reaction_type === 'sympathy') : [];
+            const comments = post.comments || [];
+            
+            const userResonated = currentSession && resonates.some(r => r.user_id === currentSession.user.id);
+            const userSympathized = currentSession && sympathies.some(r => r.user_id === currentSession.user.id);
+            
+            const resonateColor = userResonated ? '#f1c40f' : '#888';
+            const sympathyColor = userSympathized ? '#e74c3c' : '#888';
+
+            // Generate Comments HTML
+            let commentsHTML = '';
+            comments.forEach(c => {
+                const commenter = profileMap[c.user_id] || { username: 'Unknown', avatar_url: 'https://via.placeholder.com/30' };
+                commentsHTML += `
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-start;">
+                        <img src="${commenter.avatar_url}" style="width: 25px; height: 25px; border-radius: 50%; object-fit: cover;">
+                        <div style="background: #f8f9fa; padding: 8px 12px; border-radius: 15px; flex: 1;">
+                            <span style="font-weight: bold; font-size: 0.85rem; color: #0056b3; cursor:pointer;" onclick="window.history.pushState({}, '', '?u=${commenter.username}'); loadSpecificProfile('${commenter.username}');">@${commenter.username}</span>
+                            <p style="margin: 3px 0 0 0; font-size: 0.9rem;">${c.content}</p>
+                        </div>
+                    </div>
+                `;
+            });
+
+            return `
+                <div class="update-post">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <img src="${authorData.avatar_url}" style="width: 40px; height: 40px; border-radius: 50%; cursor: pointer; object-fit: cover;" onclick="window.history.pushState({}, '', '?u=${authorData.username}'); loadSpecificProfile('${authorData.username}');">
+                            <div>
+                                <span style="font-weight: bold; cursor: pointer; color: #0056b3;" onclick="window.history.pushState({}, '', '?u=${authorData.username}'); loadSpecificProfile('${authorData.username}');">@${authorData.username}</span>
+                                <span style="font-size: 0.8rem; color: #888; display: block;">${date}</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 15px; align-items: center;">
+                            <button onclick="sharePost('${post.id}')" style="background:none; border:none; color:#0056b3; cursor:pointer; font-size: 1.1rem;" title="Share"><i class="fa-solid fa-share-nodes"></i></button>
+                            ${!post.is_public ? '<i class="fa-solid fa-lock" style="color: #888; font-size: 0.9rem;" title="Network Only"></i>' : ''}
+                        </div>
+                    </div>
+                    
+                    <p style="margin-top: 5px; font-size: 1.05rem;">${post.content}</p>
+                    
+                    <div style="display: flex; gap: 20px; margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee;">
+                        <button onclick="toggleReaction('${post.id}', '${post.user_id}', 'resonate', ${userResonated})" style="background:none; border:none; cursor:pointer; color:${resonateColor}; font-size:1.1rem; display:flex; align-items:center; gap:6px; padding:0;" title="Resonate (Energy)">
+                            <i class="fa-solid fa-bolt"></i> <span style="font-size:0.95rem; font-weight:bold;">${resonates.length}</span>
+                        </button>
+                        <button onclick="toggleReaction('${post.id}', '${post.user_id}', 'sympathy', ${userSympathized})" style="background:none; border:none; cursor:pointer; color:${sympathyColor}; font-size:1.1rem; display:flex; align-items:center; gap:6px; padding:0;" title="Sympathy (Hug)">
+                            <i class="fa-solid fa-hand-holding-heart"></i> <span style="font-size:0.95rem; font-weight:bold;">${sympathies.length}</span>
+                        </button>
+                        <button onclick="toggleCommentSection('${post.id}')" style="background:none; border:none; cursor:pointer; color:#888; font-size:1.1rem; display:flex; align-items:center; gap:6px; padding:0;" title="Comments">
+                            <i class="fa-regular fa-comment"></i> <span style="font-size:0.95rem; font-weight:bold;">${comments.length}</span>
+                        </button>
+                    </div>
+
+                    <div id="comments-section-${post.id}" style="display:none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ddd;">
+                        ${commentsHTML}
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <input type="text" id="comment-input-${post.id}" placeholder="Write a comment..." style="flex: 1; padding: 8px 12px; border-radius: 20px; border: 1px solid #ccc;">
+                            <button onclick="addComment('${post.id}', '${post.user_id}')" class="action-btn" style="padding: 5px 15px; border-radius: 20px; font-size: 0.9rem;">Reply</button>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
 
         function switchFeed(feedType) {
@@ -794,16 +988,14 @@
             fetchCommunityPosts(feedType);
         }
 
-        // UPDATED: Now queries for reactions dynamically on every fetch
         async function fetchCommunityPosts(feedType) {
             const container = document.getElementById('community-feed-display');
             container.innerHTML = '<p style="text-align: center; color: #777;">Loading posts...</p>';
 
             let postsData = [];
 
-            // Appending post_reactions(*) allows us to pull all the reactions in a single database hit
             if (feedType === 'public') {
-                const { data } = await supabaseClient.from('posts').select('*, post_reactions(*)').eq('is_public', true).order('created_at', { ascending: false }).limit(50);
+                const { data } = await supabaseClient.from('posts').select('*, post_reactions(*), comments(*)').eq('is_public', true).order('created_at', { ascending: false }).limit(50);
                 postsData = data || [];
             } else if (feedType === 'joined') {
                 if (!currentSession) {
@@ -811,14 +1003,12 @@
                     return;
                 }
                 const { data: connections } = await supabaseClient.from('connections').select('following_id').eq('follower_id', currentSession.user.id);
-                
                 if (!connections || connections.length === 0) {
                     container.innerHTML = '<p style="text-align: center; color: #777;">You haven\'t joined anyone\'s network yet. Visit a profile to join them!</p>';
                     return;
                 }
-                
                 const followingIds = connections.map(c => c.following_id);
-                const { data } = await supabaseClient.from('posts').select('*, post_reactions(*)').in('user_id', followingIds).order('created_at', { ascending: false }).limit(50);
+                const { data } = await supabaseClient.from('posts').select('*, post_reactions(*), comments(*)').in('user_id', followingIds).order('created_at', { ascending: false }).limit(50);
                 postsData = data || [];
             }
 
@@ -827,53 +1017,21 @@
                 return;
             }
 
-            const userIds = [...new Set(postsData.map(p => p.user_id))];
-            const { data: profiles } = await supabaseClient.from('profiles').select('id, username, avatar_url').in('id', userIds);
+            // Gather all needed profiles (authors + commenters)
+            let allUserIds = [];
+            postsData.forEach(p => {
+                allUserIds.push(p.user_id);
+                if(p.comments) p.comments.forEach(c => allUserIds.push(c.user_id));
+            });
+            const { data: profiles } = await supabaseClient.from('profiles').select('id, username, avatar_url').in('id', [...new Set(allUserIds)]);
 
             const profileMap = {};
             if (profiles) profiles.forEach(p => profileMap[p.id] = p);
 
             container.innerHTML = '';
             postsData.forEach(post => {
-                const date = new Date(post.created_at).toLocaleDateString();
                 const author = profileMap[post.user_id] || { username: 'Unknown', avatar_url: 'https://via.placeholder.com/40' };
-                
-                // Reaction Logic processing
-                const resonates = post.post_reactions ? post.post_reactions.filter(r => r.reaction_type === 'resonate') : [];
-                const sympathies = post.post_reactions ? post.post_reactions.filter(r => r.reaction_type === 'sympathy') : [];
-                const userResonated = currentSession && resonates.some(r => r.user_id === currentSession.user.id);
-                const userSympathized = currentSession && sympathies.some(r => r.user_id === currentSession.user.id);
-                const resonateColor = userResonated ? '#f1c40f' : '#888';
-                const sympathyColor = userSympathized ? '#e74c3c' : '#888';
-
-                const div = document.createElement('div');
-                div.className = 'update-post';
-                div.innerHTML = `
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <img src="${author.avatar_url}" style="width: 40px; height: 40px; border-radius: 50%; cursor: pointer; object-fit: cover;" onclick="window.history.pushState({}, '', '?u=${author.username}'); loadSpecificProfile('${author.username}');">
-                            <div>
-                                <span style="font-weight: bold; cursor: pointer; color: #0056b3;" onclick="window.history.pushState({}, '', '?u=${author.username}'); loadSpecificProfile('${author.username}');">@${author.username}</span>
-                                <span style="font-size: 0.8rem; color: #888; display: block;">${date}</span>
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 15px; align-items: center;">
-                            <button onclick="sharePost('${post.id}')" style="background:none; border:none; color:#0056b3; cursor:pointer; font-size: 1.1rem;" title="Share"><i class="fa-solid fa-share-nodes"></i></button>
-                            ${!post.is_public ? '<i class="fa-solid fa-lock" style="color: #888; font-size: 0.9rem;" title="Network Only"></i>' : ''}
-                        </div>
-                    </div>
-                    <p style="margin-top: 5px; font-size: 1.05rem;">${post.content}</p>
-                    
-                    <div style="display: flex; gap: 20px; margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee;">
-                        <button onclick="toggleReaction('${post.id}', 'resonate', ${userResonated})" style="background:none; border:none; cursor:pointer; color:${resonateColor}; font-size:1.1rem; display:flex; align-items:center; gap:6px; padding:0;" title="Resonate (Energy)">
-                            <i class="fa-solid fa-bolt"></i> <span style="font-size:0.95rem; font-weight:bold;">${resonates.length}</span>
-                        </button>
-                        <button onclick="toggleReaction('${post.id}', 'sympathy', ${userSympathized})" style="background:none; border:none; cursor:pointer; color:${sympathyColor}; font-size:1.1rem; display:flex; align-items:center; gap:6px; padding:0;" title="Sympathy (Hug)">
-                            <i class="fa-solid fa-hand-holding-heart"></i> <span style="font-size:0.95rem; font-weight:bold;">${sympathies.length}</span>
-                        </button>
-                    </div>
-                `;
-                container.appendChild(div);
+                container.innerHTML += generatePostHTML(post, author, profileMap);
             });
         }
 
@@ -881,50 +1039,27 @@
             const container = document.getElementById('profile-feed-display');
             container.innerHTML = '<p style="text-align: center; color: #777;">Loading posts...</p>';
             
-            const { data: posts, error } = await supabaseClient.from('posts').select('*, post_reactions(*)').eq('user_id', userId).order('created_at', { ascending: false });
+            const { data: postsData, error } = await supabaseClient.from('posts').select('*, post_reactions(*), comments(*)').eq('user_id', userId).order('created_at', { ascending: false });
                 
-            if (error) {
-                container.innerHTML = '<p style="text-align: center; color: red;">Failed to load posts.</p>';
-                return;
-            }
-            if (!posts || posts.length === 0) {
+            if (error || !postsData || postsData.length === 0) {
                 container.innerHTML = '<p style="text-align: center; color: #777;">This user hasn\'t posted anything yet.</p>';
                 return;
             }
             
-            container.innerHTML = '';
-            posts.forEach(post => {
-                const date = new Date(post.created_at).toLocaleDateString();
-                
-                const resonates = post.post_reactions ? post.post_reactions.filter(r => r.reaction_type === 'resonate') : [];
-                const sympathies = post.post_reactions ? post.post_reactions.filter(r => r.reaction_type === 'sympathy') : [];
-                const userResonated = currentSession && resonates.some(r => r.user_id === currentSession.user.id);
-                const userSympathized = currentSession && sympathies.some(r => r.user_id === currentSession.user.id);
-                const resonateColor = userResonated ? '#f1c40f' : '#888';
-                const sympathyColor = userSympathized ? '#e74c3c' : '#888';
+            let allUserIds = [];
+            postsData.forEach(p => {
+                allUserIds.push(p.user_id);
+                if(p.comments) p.comments.forEach(c => allUserIds.push(c.user_id));
+            });
+            const { data: profiles } = await supabaseClient.from('profiles').select('id, username, avatar_url').in('id', [...new Set(allUserIds)]);
 
-                const div = document.createElement('div');
-                div.className = 'update-post';
-                div.innerHTML = `
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
-                        <span style="font-size: 0.8rem; color: #888;">${date}</span>
-                        <div style="display: flex; gap: 15px; align-items: center;">
-                            <button onclick="sharePost('${post.id}')" style="background:none; border:none; color:#0056b3; cursor:pointer; font-size: 1.1rem;" title="Share"><i class="fa-solid fa-share-nodes"></i></button>
-                            ${post.is_public ? '<i class="fa-solid fa-earth-americas" style="color: #888; font-size: 0.9rem;"></i>' : '<i class="fa-solid fa-lock" style="color: #888; font-size: 0.9rem;"></i>'}
-                        </div>
-                    </div>
-                    <p style="margin-top: 0; font-size: 1.05rem;">${post.content}</p>
-                    
-                    <div style="display: flex; gap: 20px; margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee;">
-                        <button onclick="toggleReaction('${post.id}', 'resonate', ${userResonated})" style="background:none; border:none; cursor:pointer; color:${resonateColor}; font-size:1.1rem; display:flex; align-items:center; gap:6px; padding:0;" title="Resonate (Energy)">
-                            <i class="fa-solid fa-bolt"></i> <span style="font-size:0.95rem; font-weight:bold;">${resonates.length}</span>
-                        </button>
-                        <button onclick="toggleReaction('${post.id}', 'sympathy', ${userSympathized})" style="background:none; border:none; cursor:pointer; color:${sympathyColor}; font-size:1.1rem; display:flex; align-items:center; gap:6px; padding:0;" title="Sympathy (Hug)">
-                            <i class="fa-solid fa-hand-holding-heart"></i> <span style="font-size:0.95rem; font-weight:bold;">${sympathies.length}</span>
-                        </button>
-                    </div>
-                `;
-                container.appendChild(div);
+            const profileMap = {};
+            if (profiles) profiles.forEach(p => profileMap[p.id] = p);
+
+            container.innerHTML = '';
+            postsData.forEach(post => {
+                const author = profileMap[post.user_id] || { username: 'Unknown', avatar_url: 'https://via.placeholder.com/40' };
+                container.innerHTML += generatePostHTML(post, author, profileMap);
             });
         }
 
@@ -933,46 +1068,22 @@
             const container = document.getElementById('single-post-display');
             container.innerHTML = '<p style="text-align: center; color: #777;">Loading post...</p>';
 
-            const { data: post, error } = await supabaseClient.from('posts').select('*, post_reactions(*)').eq('id', postId).single();
+            const { data: post, error } = await supabaseClient.from('posts').select('*, post_reactions(*), comments(*)').eq('id', postId).single();
 
             if (error || !post) {
                 container.innerHTML = '<p style="text-align: center; color: red; font-weight: bold;">Post not found, or it is locked to a private network.</p><div style="text-align:center; margin-top:20px;"><button class="action-btn" onclick="openTab(\'community\')">Go to Dashboard</button></div>';
                 return;
             }
 
-            const { data: author } = await supabaseClient.from('profiles').select('*').eq('id', post.user_id).single();
-            const date = new Date(post.created_at).toLocaleDateString();
-            const authorData = author || { username: 'Unknown', avatar_url: 'https://via.placeholder.com/40' };
+            let allUserIds = [post.user_id];
+            if(post.comments) post.comments.forEach(c => allUserIds.push(c.user_id));
+            const { data: profiles } = await supabaseClient.from('profiles').select('id, username, avatar_url').in('id', [...new Set(allUserIds)]);
 
-            const resonates = post.post_reactions ? post.post_reactions.filter(r => r.reaction_type === 'resonate') : [];
-            const sympathies = post.post_reactions ? post.post_reactions.filter(r => r.reaction_type === 'sympathy') : [];
-            const userResonated = currentSession && resonates.some(r => r.user_id === currentSession.user.id);
-            const userSympathized = currentSession && sympathies.some(r => r.user_id === currentSession.user.id);
-            const resonateColor = userResonated ? '#f1c40f' : '#888';
-            const sympathyColor = userSympathized ? '#e74c3c' : '#888';
+            const profileMap = {};
+            if (profiles) profiles.forEach(p => profileMap[p.id] = p);
+            const authorData = profileMap[post.user_id] || { username: 'Unknown', avatar_url: 'https://via.placeholder.com/40' };
 
-            container.innerHTML = `
-                <div class="update-post">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <img src="${authorData.avatar_url}" style="width: 50px; height: 50px; border-radius: 50%; cursor: pointer; object-fit: cover;" onclick="window.history.pushState({}, '', '?u=${authorData.username}'); loadSpecificProfile('${authorData.username}');">
-                            <div>
-                                <span style="font-weight: bold; cursor: pointer; color: #0056b3; font-size: 1.1rem;" onclick="window.history.pushState({}, '', '?u=${authorData.username}'); loadSpecificProfile('${authorData.username}');">@${authorData.username}</span>
-                                <span style="font-size: 0.85rem; color: #888; display: block;">${date}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <p style="margin-top: 15px; font-size: 1.25rem; line-height: 1.5;">${post.content}</p>
-
-                    <div style="display: flex; gap: 20px; margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee;">
-                        <button onclick="toggleReaction('${post.id}', 'resonate', ${userResonated})" style="background:none; border:none; cursor:pointer; color:${resonateColor}; font-size:1.1rem; display:flex; align-items:center; gap:6px; padding:0;" title="Resonate (Energy)">
-                            <i class="fa-solid fa-bolt"></i> <span style="font-size:0.95rem; font-weight:bold;">${resonates.length}</span>
-                        </button>
-                        <button onclick="toggleReaction('${post.id}', 'sympathy', ${userSympathized})" style="background:none; border:none; cursor:pointer; color:${sympathyColor}; font-size:1.1rem; display:flex; align-items:center; gap:6px; padding:0;" title="Sympathy (Hug)">
-                            <i class="fa-solid fa-hand-holding-heart"></i> <span style="font-size:0.95rem; font-weight:bold;">${sympathies.length}</span>
-                        </button>
-                    </div>
-                </div>
+            container.innerHTML = generatePostHTML(post, authorData, profileMap) + `
                 <div style="text-align: center; margin-top: 30px;">
                     <button class="action-btn" onclick="openTab('community')">Enter the Community Dashboard</button>
                 </div>
@@ -982,30 +1093,18 @@
         async function submitPost() {
             const content = document.getElementById('new-post-content').value;
             const isPublic = document.getElementById('is-public-checkbox').checked;
-            
             if (!content.trim()) return alert("Please write something before posting.");
             if (!currentSession) return alert("Session expired. Please log in again.");
 
-            const { error } = await supabaseClient.from('posts').insert([
-                { user_id: currentSession.user.id, content: content, is_public: isPublic }
-            ]);
+            const { error } = await supabaseClient.from('posts').insert([{ user_id: currentSession.user.id, content: content, is_public: isPublic }]);
 
-            if (error) {
-                alert("Error saving post: " + error.message);
-            } else {
+            if (error) alert("Error saving post: " + error.message);
+            else {
                 alert("Posted successfully!");
                 document.getElementById('new-post-content').value = ''; 
-                
-                if (document.getElementById('community').classList.contains('active')) {
-                    const activeFeed = document.getElementById('btn-joined-feed').classList.contains('active') ? 'joined' : 'public';
-                    fetchCommunityPosts(activeFeed);
-                } else if (currentProfile && document.getElementById('user-profile').classList.contains('active')) {
-                    fetchUserPosts(currentSession.user.id);
-                }
+                refreshCurrentView();
             }
         }
     </script>
 </body>
 </html>
-
-
