@@ -337,39 +337,86 @@
     <!-- Backend Scripts (Supabase Auth) -->
     <script>
         // STEP 2: YOU WILL PASTE YOUR KEYS HERE SHORTLY
-        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        const SUPABASE_URL = 'https://svebtaonabavuxcsqwqs.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN2ZWJ0YW9uYWJhdnV4Y3Nxd3FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzMDM0MjYsImV4cCI6MjEwNDg3OTQyNn0._3cfA2j7rl0GzlnWKDNmlRQwLsu8oh52PYQ85KouSIs';
         
         // Initialize Supabase Client
-        // const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Basic Auth UI Logic (Wiring this up to the database happens next!)
-        function checkUserStatus() {
-            // Placeholder: Check if session exists in Supabase
-            // If logged in -> show #dashboard-section, hide #auth-section
-            // If logged out -> show #auth-section, hide #dashboard-section
+        // Listen for login/logout changes to update the screen automatically
+        supabase.auth.onAuthStateChange((event, session) => {
+            updateUI(session);
+        });
+
+        // Check if the user is already logged in when the page loads
+        async function checkUserStatus() {
+            const { data: { session } } = await supabase.auth.getSession();
+            updateUI(session);
+        }
+
+        // Toggles the visibility of the login screen vs the dashboard
+        function updateUI(session) {
+            if (session) {
+                document.getElementById('auth-section').style.display = 'none';
+                document.getElementById('dashboard-section').style.display = 'block';
+                document.getElementById('user-display-email').innerText = session.user.email;
+            } else {
+                document.getElementById('auth-section').style.display = 'block';
+                document.getElementById('dashboard-section').style.display = 'none';
+            }
         }
 
         async function signUp() {
             const email = document.getElementById('auth-email').value;
             const password = document.getElementById('auth-password').value;
-            document.getElementById('auth-success').innerText = "Simulating sign up... please set up keys.";
-            // We will add the actual Supabase command here next
+            const errorMsg = document.getElementById('auth-error');
+            const successMsg = document.getElementById('auth-success');
+            
+            errorMsg.innerText = '';
+            successMsg.innerText = '';
+
+            const { data, error } = await supabase.auth.signUp({
+                email: email,
+                password: password,
+            });
+
+            if (error) {
+                errorMsg.innerText = error.message;
+            } else {
+                successMsg.innerText = "Success! Check your email for a confirmation link.";
+            }
         }
 
         async function logIn() {
-            // We will add the actual Supabase command here next
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const errorMsg = document.getElementById('auth-error');
+            
+            errorMsg.innerText = '';
+
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password,
+            });
+
+            if (error) {
+                errorMsg.innerText = error.message;
+            }
         }
 
         async function logOut() {
-            // We will add the actual Supabase command here next
+            const { error } = await supabase.auth.signOut();
+            if (error) console.error('Error logging out:', error.message);
         }
         
         async function submitPost() {
             const content = document.getElementById('new-post-content').value;
             const isPublic = document.getElementById('is-public-checkbox').checked;
-            alert("Ready to post to database! Content: " + content + " | Public: " + isPublic);
+            alert("Database connection is next! Content: " + content + " | Public: " + isPublic);
         }
-    </script>
+
+        // Run the status check immediately when the browser loads the script
+        checkUserStatus();
+</script>
 </body>
 </html>
