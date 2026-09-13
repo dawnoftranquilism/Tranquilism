@@ -192,6 +192,8 @@
                 <div style="margin-top: 20px;">
                     <button type="button" class="action-btn" onclick="handleAuth()" style="width: 100%; font-size: 1.1rem; padding: 12px;">Continue</button>
                 </div>
+                <!-- Auth Messages -->
+                <p id="auth-message" style="color: #0056b3; margin-top: 10px; font-weight: bold;"></p>
                 <p id="auth-error" style="color: red; margin-top: 10px; font-weight: bold;"></p>
                 <p id="auth-success" style="color: green; margin-top: 10px; font-weight: bold;"></p>
             </div>
@@ -271,7 +273,6 @@
                             <div style="display: flex; gap: 10px;">
                                 <button id="edit-btn-profile" type="button" class="action-btn" onclick="editProfile()" style="background-color: #f0ad4e; padding: 5px 10px; font-size: 0.8rem; display: none;"><i class="fa-solid fa-pen"></i> Edit</button>
                                 
-                                <!-- NEW: The Join Button -->
                                 <button id="join-network-btn" type="button" class="action-btn" onclick="toggleJoinStatus()" style="background-color: #17a2b8; padding: 5px 10px; font-size: 0.8rem; display: none;"></button>
                                 
                                 <button id="logout-btn-profile" type="button" class="action-btn" onclick="logOut()" style="background-color: #d9534f; padding: 5px 10px; font-size: 0.8rem;">Log Out</button>
@@ -296,13 +297,22 @@
             </div>
         </div>
 
-        <!-- 4. Updates Feed -->
+        <!-- NEW 4. Single Shared Post View -->
+        <div id="single-post-view" class="tab-content">
+            <h2 style="margin-bottom: 5px;">Shared Post</h2>
+            <hr style="margin-bottom: 20px;">
+            <div id="single-post-display">
+                <!-- Post injects here -->
+            </div>
+        </div>
+
+        <!-- 5. Updates Feed -->
         <div id="updates" class="tab-content">
             <h2>Recent Updates</h2>
             <div id="updates-feed"><p>Loading updates...</p></div>
         </div>
 
-        <!-- 5. Join Email List -->
+        <!-- 6. Join Email List -->
         <div id="email" class="tab-content">
             <h2>Join the Email List</h2>
             <p>Subscribe to receive the latest updates, essays, and news directly to your inbox.</p>
@@ -315,7 +325,7 @@
             </form>
         </div>
 
-        <!-- 6. Contact Form -->
+        <!-- 7. Contact Form -->
         <div id="contact" class="tab-content">
             <h2>Contact</h2>
             <p>Send a message directly to the author. Maximum 3000 characters.</p>
@@ -364,6 +374,11 @@
             contents.forEach(content => content.classList.remove('active'));
             const buttons = document.querySelectorAll('.tab-btn');
             buttons.forEach(button => button.classList.remove('active'));
+            
+            // Only highlight buttons if they exist for this tab
+            const activeButtons = document.querySelectorAll(`button[onclick="openTab('${tabId}')"]`);
+            activeButtons.forEach(btn => btn.classList.add('active'));
+            
             document.getElementById(tabId).classList.add('active');
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -412,10 +427,10 @@
         try {
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             
-            supabaseClient.auth.onAuthStateChange((event, session) => {
+            supabaseClient.auth.onAuthStateChange(async (event, session) => {
                 currentSession = session;
-                updateHeaderUI(session);
-                checkURLForProfileLink(); 
+                await updateHeaderUI(session);
+                handleURLRouting(); 
             });
             checkUserStatus();
         } catch (err) {
@@ -425,7 +440,8 @@
         async function checkUserStatus() {
             const { data: { session } } = await supabaseClient.auth.getSession();
             currentSession = session;
-            updateHeaderUI(session);
+            await updateHeaderUI(session);
+            handleURLRouting();
         }
 
         async function updateHeaderUI(session) {
@@ -457,9 +473,11 @@
                         configSec.style.display = 'none';
                         dashSec.style.display = 'block';
 
-                        // Check which feed is active and fetch it
-                        const activeFeed = document.getElementById('btn-joined-feed').classList.contains('active') ? 'joined' : 'public';
-                        fetchCommunityPosts(activeFeed);
+                        // Only refresh community dashboard if we are currently looking at it
+                        if (document.getElementById('community').classList.contains('active')) {
+                            const activeFeed = document.getElementById('btn-joined-feed').classList.contains('active') ? 'joined' : 'public';
+                            fetchCommunityPosts(activeFeed);
+                        }
                     } else {
                         document.getElementById('header-username').innerText = `Finish Setup`;
                         authSec.style.display = 'none';
@@ -480,13 +498,55 @@
             }
         }
 
+        // --- NEW: Universal Sharing and URL Routing Logic ---
+        function sharePost(postId) {
+            const url = window.location.origin + window.location.pathname + '?p=' + postId;
+            
+            // Uses native mobile sharing menu if available
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Tranquilism Community',
+                    text: 'Check out this post on Tranquilism!',
+                    url: url
+                }).catch(err => console.log('Share cancelled', err));
+            } else {
+                // Fallback for desktops
+                navigator.clipboard.writeText(url);
+                alert("Link copied to clipboard!");
+            }
+        }
+
+        function handleURLRouting() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetUsername = urlParams.get('u');
+            const targetPost = urlParams.get('p');
+
+            if (targetPost) {
+                if (!currentSession) {
+                    // Force them to sign up first
+                    openTab('community');
+                    document.getElementById('auth-message').innerText = "Please create an account or log in to view this shared post.";
+                } else if (currentProfile) {
+                    // Fully logged in and configured - show them the post!
+                    loadSinglePost(targetPost);
+                }
+                // If they are logged in but don't have a profile yet, the system leaves them 
+                // on the setup screen. Once they click 'Save Profile', it will load the post!
+            } else if (targetUsername) {
+                loadSpecificProfile(targetUsername);
+            }
+        }
+
+        // --- Auth Functions ---
         async function handleAuth() {
             const email = document.getElementById('auth-email').value.trim();
             const password = document.getElementById('auth-password').value;
             const errorMsg = document.getElementById('auth-error');
             const successMsg = document.getElementById('auth-success');
+            const authMessage = document.getElementById('auth-message');
             
             errorMsg.innerText = '';
+            authMessage.innerText = ''; // clear deep-link message
             successMsg.innerText = 'Processing...';
 
             if (!email || !password) {
@@ -527,9 +587,12 @@
 
         async function logOut() {
             await supabaseClient.auth.signOut();
+            // Clear the URL so it doesn't try to load the post again
+            window.history.pushState({}, '', window.location.pathname); 
             openTab('community');
         }
 
+        // --- Profile Management ---
         function editProfile() {
             if (!currentProfile) return;
             document.getElementById('config-username').value = currentProfile.username || '';
@@ -604,8 +667,10 @@
                 errorMsg.innerText = "Error saving profile: " + profileError.message;
                 successMsg.innerText = '';
             } else {
-                successMsg.innerText = "Profile saved! Redirecting to dashboard...";
+                successMsg.innerText = "Profile saved! Redirecting...";
                 document.getElementById('config-cancel-btn').style.display = 'none';
+                
+                // Triggers checkUserStatus -> which then triggers handleURLRouting if there's a shared post waiting!
                 setTimeout(() => checkUserStatus(), 1000); 
             }
         }
@@ -614,14 +679,6 @@
             if (currentProfile) {
                 window.history.pushState({}, '', `?u=${currentProfile.username}`);
                 loadSpecificProfile(currentProfile.username);
-            }
-        }
-
-        function checkURLForProfileLink() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const targetUsername = urlParams.get('u');
-            if (targetUsername) {
-                loadSpecificProfile(targetUsername);
             }
         }
 
@@ -663,17 +720,14 @@
                 const joinBtn = document.getElementById('join-network-btn');
                 
                 if (currentProfile && currentProfile.username === profile.username) {
-                    // Viewing your own profile
                     logoutBtn.style.display = 'inline-block';
                     editBtn.style.display = 'inline-block';
                     joinBtn.style.display = 'none';
                 } else {
-                    // Viewing someone else's profile
                     logoutBtn.style.display = 'none';
                     editBtn.style.display = 'none';
                     joinBtn.style.display = 'inline-block';
                     
-                    // Check if already joined
                     const { data: connection } = await supabaseClient.from('connections')
                         .select('*')
                         .eq('follower_id', currentSession.user.id)
@@ -698,20 +752,17 @@
             }
         }
 
-        // NEW: Toggle Joining/Unjoining a user
         async function toggleJoinStatus() {
             const btn = document.getElementById('join-network-btn');
             const targetId = btn.dataset.targetId;
             const isJoined = btn.dataset.joined === 'true';
 
             if (isJoined) {
-                // Leave Network
                 await supabaseClient.from('connections').delete().eq('follower_id', currentSession.user.id).eq('following_id', targetId);
                 btn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Join';
                 btn.style.backgroundColor = '#17a2b8';
                 btn.dataset.joined = 'false';
             } else {
-                // Join Network
                 await supabaseClient.from('connections').insert([{ follower_id: currentSession.user.id, following_id: targetId }]);
                 btn.innerHTML = '<i class="fa-solid fa-user-check"></i> Joined';
                 btn.style.backgroundColor = '#28a745';
@@ -719,6 +770,7 @@
             }
         }
 
+        // --- Fetching and Displaying Posts ---
         function switchFeed(feedType) {
             document.getElementById('btn-joined-feed').classList.remove('active');
             document.getElementById('btn-public-feed').classList.remove('active');
@@ -726,7 +778,6 @@
             fetchCommunityPosts(feedType);
         }
 
-        // UPDATED: Now fetches Joined Network posts as well
         async function fetchCommunityPosts(feedType) {
             const container = document.getElementById('community-feed-display');
             container.innerHTML = '<p style="text-align: center; color: #777;">Loading posts...</p>';
@@ -741,7 +792,6 @@
                     container.innerHTML = '<p style="text-align: center; color: #777;">Please log in to view your joined network.</p>';
                     return;
                 }
-                // Find who the user is following
                 const { data: connections } = await supabaseClient.from('connections').select('following_id').eq('follower_id', currentSession.user.id);
                 
                 if (!connections || connections.length === 0) {
@@ -750,8 +800,6 @@
                 }
                 
                 const followingIds = connections.map(c => c.following_id);
-                
-                // Fetch posts from those users (RLS now allows seeing their private posts!)
                 const { data } = await supabaseClient.from('posts').select('*').in('user_id', followingIds).order('created_at', { ascending: false }).limit(50);
                 postsData = data || [];
             }
@@ -783,7 +831,10 @@
                                 <span style="font-size: 0.8rem; color: #888; display: block;">${date}</span>
                             </div>
                         </div>
-                        ${!post.is_public ? '<i class="fa-solid fa-lock" style="color: #888; font-size: 0.9rem;" title="Network Only"></i>' : ''}
+                        <div style="display: flex; gap: 15px; align-items: center;">
+                            <button onclick="sharePost('${post.id}')" style="background:none; border:none; color:#0056b3; cursor:pointer; font-size: 1.1rem;" title="Share"><i class="fa-solid fa-share-nodes"></i></button>
+                            ${!post.is_public ? '<i class="fa-solid fa-lock" style="color: #888; font-size: 0.9rem;" title="Network Only"></i>' : ''}
+                        </div>
                     </div>
                     <p style="margin-top: 5px; font-size: 1.05rem;">${post.content}</p>
                 `;
@@ -801,7 +852,6 @@
                 container.innerHTML = '<p style="text-align: center; color: red;">Failed to load posts.</p>';
                 return;
             }
-            
             if (!posts || posts.length === 0) {
                 container.innerHTML = '<p style="text-align: center; color: #777;">This user hasn\'t posted anything yet.</p>';
                 return;
@@ -813,13 +863,53 @@
                 const div = document.createElement('div');
                 div.className = 'update-post';
                 div.innerHTML = `
-                    <p style="font-size: 0.8rem; color: #888; margin-bottom: 5px;">
-                        ${date} &nbsp; ${post.is_public ? '<i class="fa-solid fa-earth-americas"></i> Public' : '<i class="fa-solid fa-lock"></i> Network Only'}
-                    </p>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+                        <span style="font-size: 0.8rem; color: #888;">${date}</span>
+                        <div style="display: flex; gap: 15px; align-items: center;">
+                            <button onclick="sharePost('${post.id}')" style="background:none; border:none; color:#0056b3; cursor:pointer; font-size: 1.1rem;" title="Share"><i class="fa-solid fa-share-nodes"></i></button>
+                            ${post.is_public ? '<i class="fa-solid fa-earth-americas" style="color: #888; font-size: 0.9rem;"></i>' : '<i class="fa-solid fa-lock" style="color: #888; font-size: 0.9rem;"></i>'}
+                        </div>
+                    </div>
                     <p style="margin-top: 0; font-size: 1.05rem;">${post.content}</p>
                 `;
                 container.appendChild(div);
             });
+        }
+
+        // --- NEW: Load a Single Shared Post ---
+        async function loadSinglePost(postId) {
+            openTab('single-post-view');
+            const container = document.getElementById('single-post-display');
+            container.innerHTML = '<p style="text-align: center; color: #777;">Loading post...</p>';
+
+            const { data: post, error } = await supabaseClient.from('posts').select('*').eq('id', postId).single();
+
+            if (error || !post) {
+                container.innerHTML = '<p style="text-align: center; color: red; font-weight: bold;">Post not found, or it is locked to a private network.</p><div style="text-align:center; margin-top:20px;"><button class="action-btn" onclick="openTab(\'community\')">Go to Dashboard</button></div>';
+                return;
+            }
+
+            const { data: author } = await supabaseClient.from('profiles').select('*').eq('id', post.user_id).single();
+            const date = new Date(post.created_at).toLocaleDateString();
+            const authorData = author || { username: 'Unknown', avatar_url: 'https://via.placeholder.com/40' };
+
+            container.innerHTML = `
+                <div class="update-post">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <img src="${authorData.avatar_url}" style="width: 50px; height: 50px; border-radius: 50%; cursor: pointer; object-fit: cover;" onclick="window.history.pushState({}, '', '?u=${authorData.username}'); loadSpecificProfile('${authorData.username}');">
+                            <div>
+                                <span style="font-weight: bold; cursor: pointer; color: #0056b3; font-size: 1.1rem;" onclick="window.history.pushState({}, '', '?u=${authorData.username}'); loadSpecificProfile('${authorData.username}');">@${authorData.username}</span>
+                                <span style="font-size: 0.85rem; color: #888; display: block;">${date}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p style="margin-top: 15px; font-size: 1.25rem; line-height: 1.5;">${post.content}</p>
+                </div>
+                <div style="text-align: center; margin-top: 30px;">
+                    <button class="action-btn" onclick="openTab('community')">Enter the Community Dashboard</button>
+                </div>
+            `;
         }
 
         async function submitPost() {
