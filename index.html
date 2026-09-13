@@ -40,7 +40,7 @@
 
     <meta property="og:image" content="https://dawnoftranquilism.github.io/Tranquilism/favicon.png">
 
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- Twitter / X Card Data -->
 
@@ -273,6 +273,32 @@
             margin-bottom: 15px;
 
         }
+        auth-container, .post-creator {
+            background: rgba(255,255,255,0.9);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        .feed-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .feed-toggle button {
+            flex: 1;
+            padding: 10px;
+            background-color: #e9ecef;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .feed-toggle button.active {
+            background-color: #0056b3;
+            color: white;
+            border-color: #0056b3;
+        }
 
         form {
 
@@ -486,6 +512,8 @@
 
             <button class="tab-btn active" onclick="openTab('home')">Tranquilism</button>
 
+            <button class="tab-btn" onclick="openTab('community')">Community</button>
+
             <button class="tab-btn" onclick="openTab('updates')">Updates</button>
 
             <button class="tab-btn" onclick="openTab('email')">Join Email List</button>
@@ -610,7 +638,53 @@
 
         </div>
 
+<!-- 3. NEW: Community / Dashboard Tab -->
+        <div id="community" class="tab-content">
+            <h2>Community Dashboard</h2>
+            
+            <!-- Auth Section: Shown if user is NOT logged in -->
+            <div id="auth-section" class="auth-container">
+                <h3>Join the Conversation</h3>
+                <p>Sign up or log in to connect, share, and view the public dashboard.</p>
+                <input type="email" id="auth-email" placeholder="Your Email Address" required>
+                <input type="password" id="auth-password" placeholder="Create a Password" required>
+                <div style="margin-top: 10px; display: flex; gap: 10px;">
+                    <button class="action-btn" onclick="signUp()">Sign Up</button>
+                    <button class="action-btn" onclick="logIn()" style="background-color: #555;">Log In</button>
+                </div>
+                <p id="auth-error" style="color: red; margin-top: 10px;"></p>
+                <p id="auth-success" style="color: green; margin-top: 10px;"></p>
+            </div>
 
+            <!-- Logged-in Section: Shown if user IS logged in -->
+            <div id="dashboard-section" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <p>Welcome back! <span id="user-display-email" style="font-weight: bold;"></span></p>
+                    <button class="action-btn" onclick="logOut()" style="background-color: #d9534f; padding: 5px 10px;">Log Out</button>
+                </div>
+
+                <div class="post-creator">
+                    <textarea id="new-post-content" rows="3" placeholder="Share a thought, image link, or video link..."></textarea>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
+                        <label style="font-size: 0.9rem;">
+                            <input type="checkbox" id="is-public-checkbox" checked> 
+                            Post to Public Dashboard
+                        </label>
+                        <button class="action-btn" onclick="submitPost()">Post</button>
+                    </div>
+                </div>
+
+                <div class="feed-toggle">
+                    <button id="btn-joined-feed" onclick="switchFeed('joined')">Joined Network</button>
+                    <button id="btn-public-feed" class="active" onclick="switchFeed('public')">Public Dashboard</button>
+                </div>
+
+                <div id="community-feed-display">
+                    <!-- Posts will render here -->
+                    <p style="text-align: center; color: #777;">Loading posts...</p>
+                </div>
+            </div>
+        </div>
 
 <!-- 2. Updates Feed -->
 
@@ -700,6 +774,8 @@
 
             <button class="tab-btn active" onclick="openTab('home')">Tranquilism</button>
 
+            <button class="tab-btn" onclick="openTab('community')">Community</button>
+
             <button class="tab-btn" onclick="openTab('updates')">Updates</button>
 
             <button class="tab-btn" onclick="openTab('email')">Join Email List</button>
@@ -742,42 +818,15 @@
 
    <script>
 
-        function openTab(tabId) {
-
-            // Hide all tab content
-
+       function openTab(tabId) {
             const contents = document.querySelectorAll('.tab-content');
-
             contents.forEach(content => content.classList.remove('active'));
-
-
-
-            // Remove active class from ALL buttons (top and bottom)
-
             const buttons = document.querySelectorAll('.tab-btn');
-
             buttons.forEach(button => button.classList.remove('active'));
-
-
-
-            // Show the selected tab
-
             document.getElementById(tabId).classList.add('active');
-
-            
-
-            // Highlight BOTH the top and bottom buttons for the active tab
-
             const activeButtons = document.querySelectorAll(`button[onclick="openTab('${tabId}')"]`);
-
             activeButtons.forEach(btn => btn.classList.add('active'));
-
-            
-
-            // Optional: scroll back to top of the container when clicking a bottom link
-
             window.scrollTo({ top: 0, behavior: 'smooth' });
-
         }
 
         // Invisible Text-Based Visitor Counter
@@ -805,6 +854,14 @@
                 document.getElementById('visitor-count').innerText = "hidden by privacy settings";
 
             });
+       function switchFeed(feedType) {
+            document.getElementById('btn-joined-feed').classList.remove('active');
+            document.getElementById('btn-public-feed').classList.remove('active');
+            document.getElementById('btn-' + feedType + '-feed').classList.add('active');
+            
+            // Logic to fetch from database goes here later
+            document.getElementById('community-feed-display').innerHTML = '<p style="text-align: center; color: #777;">Loading ' + feedType + ' posts...</p>';
+        }
 
     </script>
 
@@ -863,6 +920,108 @@
             });
 
     });
+    const SUPABASE_URL = 'https://svebtaonabavuxcsqwqs.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN2ZWJ0YW9uYWJhdnV4Y3Nxd3FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzMDM0MjYsImV4cCI6MjEwNDg3OTQyNn0._3cfA2j7rl0GzlnWKDNmlRQwLsu8oh52PYQ85KouSIs';
+        
+        // Initialize Supabase Client
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Listen for login/logout changes
+        supabase.auth.onAuthStateChange((event, session) => {
+            console.log("Auth state changed:", event);
+            updateUI(session);
+        });
+
+        async function checkUserStatus() {
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession();
+                if (error) throw error;
+                updateUI(session);
+            } catch (err) {
+                console.error("Error checking status:", err.message);
+            }
+        }
+
+        function updateUI(session) {
+            if (session) {
+                document.getElementById('auth-section').style.display = 'none';
+                document.getElementById('dashboard-section').style.display = 'block';
+                document.getElementById('user-display-email').innerText = session.user.email;
+            } else {
+                document.getElementById('auth-section').style.display = 'block';
+                document.getElementById('dashboard-section').style.display = 'none';
+            }
+        }
+
+        async function signUp() {
+            console.log("Sign Up button clicked..."); 
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const errorMsg = document.getElementById('auth-error');
+            const successMsg = document.getElementById('auth-success');
+            
+            errorMsg.innerText = '';
+            successMsg.innerText = 'Processing...';
+
+            try {
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password,
+                });
+
+                if (error) {
+                    console.error("Supabase Sign Up Error:", error);
+                    errorMsg.innerText = error.message;
+                    successMsg.innerText = '';
+                } else {
+                    console.log("Sign Up Success:", data);
+                    successMsg.innerText = "Success! Check your email for a confirmation link.";
+                }
+            } catch (err) {
+                console.error("Code Execution Error:", err);
+                errorMsg.innerText = "A critical error occurred. Check the console.";
+                successMsg.innerText = '';
+            }
+        }
+
+        async function logIn() {
+            console.log("Log In button clicked...");
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const errorMsg = document.getElementById('auth-error');
+            
+            errorMsg.innerText = 'Processing...';
+
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password,
+                });
+
+                if (error) {
+                    errorMsg.innerText = error.message;
+                } else {
+                    errorMsg.innerText = '';
+                }
+            } catch (err) {
+                console.error("Login Error:", err);
+                errorMsg.innerText = "A critical error occurred. Check the console.";
+            }
+        }
+
+        async function logOut() {
+            const { error } = await supabase.auth.signOut();
+            if (error) console.error('Error logging out:', error.message);
+        }
+        
+        async function submitPost() {
+            const content = document.getElementById('new-post-content').value;
+            const isPublic = document.getElementById('is-public-checkbox').checked;
+            alert("Database connection is next! Content: " + content + " | Public: " + isPublic);
+        }
+
+        // Run the status check immediately
+        checkUserStatus();
 
 </script>
 
