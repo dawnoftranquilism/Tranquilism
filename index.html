@@ -192,7 +192,6 @@
                 <div style="margin-top: 20px;">
                     <button type="button" class="action-btn" onclick="handleAuth()" style="width: 100%; font-size: 1.1rem; padding: 12px;">Continue</button>
                 </div>
-                <!-- Auth Messages -->
                 <p id="auth-message" style="color: #0056b3; margin-top: 10px; font-weight: bold;"></p>
                 <p id="auth-error" style="color: red; margin-top: 10px; font-weight: bold;"></p>
                 <p id="auth-success" style="color: green; margin-top: 10px; font-weight: bold;"></p>
@@ -272,9 +271,7 @@
                             <h1 id="profile-page-username" style="margin: 0; font-size: 1.8rem; color: #0056b3;">@username</h1>
                             <div style="display: flex; gap: 10px;">
                                 <button id="edit-btn-profile" type="button" class="action-btn" onclick="editProfile()" style="background-color: #f0ad4e; padding: 5px 10px; font-size: 0.8rem; display: none;"><i class="fa-solid fa-pen"></i> Edit</button>
-                                
                                 <button id="join-network-btn" type="button" class="action-btn" onclick="toggleJoinStatus()" style="background-color: #17a2b8; padding: 5px 10px; font-size: 0.8rem; display: none;"></button>
-                                
                                 <button id="logout-btn-profile" type="button" class="action-btn" onclick="logOut()" style="background-color: #d9534f; padding: 5px 10px; font-size: 0.8rem;">Log Out</button>
                             </div>
                         </div>
@@ -297,13 +294,11 @@
             </div>
         </div>
 
-        <!-- NEW 4. Single Shared Post View -->
+        <!-- 4. Single Shared Post View -->
         <div id="single-post-view" class="tab-content">
             <h2 style="margin-bottom: 5px;">Shared Post</h2>
             <hr style="margin-bottom: 20px;">
-            <div id="single-post-display">
-                <!-- Post injects here -->
-            </div>
+            <div id="single-post-display"></div>
         </div>
 
         <!-- 5. Updates Feed -->
@@ -375,7 +370,6 @@
             const buttons = document.querySelectorAll('.tab-btn');
             buttons.forEach(button => button.classList.remove('active'));
             
-            // Only highlight buttons if they exist for this tab
             const activeButtons = document.querySelectorAll(`button[onclick="openTab('${tabId}')"]`);
             activeButtons.forEach(btn => btn.classList.add('active'));
             
@@ -473,7 +467,6 @@
                         configSec.style.display = 'none';
                         dashSec.style.display = 'block';
 
-                        // Only refresh community dashboard if we are currently looking at it
                         if (document.getElementById('community').classList.contains('active')) {
                             const activeFeed = document.getElementById('btn-joined-feed').classList.contains('active') ? 'joined' : 'public';
                             fetchCommunityPosts(activeFeed);
@@ -498,11 +491,8 @@
             }
         }
 
-        // --- NEW: Universal Sharing and URL Routing Logic ---
         function sharePost(postId) {
             const url = window.location.origin + window.location.pathname + '?p=' + postId;
-            
-            // Uses native mobile sharing menu if available
             if (navigator.share) {
                 navigator.share({
                     title: 'Tranquilism Community',
@@ -510,7 +500,6 @@
                     url: url
                 }).catch(err => console.log('Share cancelled', err));
             } else {
-                // Fallback for desktops
                 navigator.clipboard.writeText(url);
                 alert("Link copied to clipboard!");
             }
@@ -523,21 +512,16 @@
 
             if (targetPost) {
                 if (!currentSession) {
-                    // Force them to sign up first
                     openTab('community');
                     document.getElementById('auth-message').innerText = "Please create an account or log in to view this shared post.";
                 } else if (currentProfile) {
-                    // Fully logged in and configured - show them the post!
                     loadSinglePost(targetPost);
                 }
-                // If they are logged in but don't have a profile yet, the system leaves them 
-                // on the setup screen. Once they click 'Save Profile', it will load the post!
             } else if (targetUsername) {
                 loadSpecificProfile(targetUsername);
             }
         }
 
-        // --- Auth Functions ---
         async function handleAuth() {
             const email = document.getElementById('auth-email').value.trim();
             const password = document.getElementById('auth-password').value;
@@ -546,7 +530,7 @@
             const authMessage = document.getElementById('auth-message');
             
             errorMsg.innerText = '';
-            authMessage.innerText = ''; // clear deep-link message
+            authMessage.innerText = ''; 
             successMsg.innerText = 'Processing...';
 
             if (!email || !password) {
@@ -587,12 +571,10 @@
 
         async function logOut() {
             await supabaseClient.auth.signOut();
-            // Clear the URL so it doesn't try to load the post again
             window.history.pushState({}, '', window.location.pathname); 
             openTab('community');
         }
 
-        // --- Profile Management ---
         function editProfile() {
             if (!currentProfile) return;
             document.getElementById('config-username').value = currentProfile.username || '';
@@ -669,8 +651,6 @@
             } else {
                 successMsg.innerText = "Profile saved! Redirecting...";
                 document.getElementById('config-cancel-btn').style.display = 'none';
-                
-                // Triggers checkUserStatus -> which then triggers handleURLRouting if there's a shared post waiting!
                 setTimeout(() => checkUserStatus(), 1000); 
             }
         }
@@ -770,7 +750,43 @@
             }
         }
 
-        // --- Fetching and Displaying Posts ---
+        // --- Reaction Logic ---
+        async function toggleReaction(postId, reactionType, isCurrentlyActive) {
+            if (!currentSession) {
+                alert("Please log in to react to posts.");
+                return;
+            }
+
+            if (isCurrentlyActive) {
+                await supabaseClient.from('post_reactions').delete()
+                    .eq('post_id', postId)
+                    .eq('user_id', currentSession.user.id)
+                    .eq('reaction_type', reactionType);
+            } else {
+                await supabaseClient.from('post_reactions').insert([
+                    { post_id: postId, user_id: currentSession.user.id, reaction_type: reactionType }
+                ]);
+            }
+
+            // Refresh the specific feed we are looking at to update the numbers/colors
+            if (document.getElementById('community').classList.contains('active')) {
+                const activeFeed = document.getElementById('btn-joined-feed').classList.contains('active') ? 'joined' : 'public';
+                fetchCommunityPosts(activeFeed);
+            } else if (document.getElementById('user-profile').classList.contains('active')) {
+                // If viewing a profile, grab the ID of that profile based on the URL or target to refresh
+                const urlParams = new URLSearchParams(window.location.search);
+                const currentViewUsername = urlParams.get('u');
+                if (currentViewUsername) {
+                    const { data: p } = await supabaseClient.from('profiles').select('id').eq('username', currentViewUsername).single();
+                    if (p) fetchUserPosts(p.id);
+                } else if (currentProfile) {
+                    fetchUserPosts(currentProfile.id);
+                }
+            } else if (document.getElementById('single-post-view').classList.contains('active')) {
+                loadSinglePost(postId);
+            }
+        }
+
         function switchFeed(feedType) {
             document.getElementById('btn-joined-feed').classList.remove('active');
             document.getElementById('btn-public-feed').classList.remove('active');
@@ -778,14 +794,16 @@
             fetchCommunityPosts(feedType);
         }
 
+        // UPDATED: Now queries for reactions dynamically on every fetch
         async function fetchCommunityPosts(feedType) {
             const container = document.getElementById('community-feed-display');
             container.innerHTML = '<p style="text-align: center; color: #777;">Loading posts...</p>';
 
             let postsData = [];
 
+            // Appending post_reactions(*) allows us to pull all the reactions in a single database hit
             if (feedType === 'public') {
-                const { data } = await supabaseClient.from('posts').select('*').eq('is_public', true).order('created_at', { ascending: false }).limit(50);
+                const { data } = await supabaseClient.from('posts').select('*, post_reactions(*)').eq('is_public', true).order('created_at', { ascending: false }).limit(50);
                 postsData = data || [];
             } else if (feedType === 'joined') {
                 if (!currentSession) {
@@ -800,7 +818,7 @@
                 }
                 
                 const followingIds = connections.map(c => c.following_id);
-                const { data } = await supabaseClient.from('posts').select('*').in('user_id', followingIds).order('created_at', { ascending: false }).limit(50);
+                const { data } = await supabaseClient.from('posts').select('*, post_reactions(*)').in('user_id', followingIds).order('created_at', { ascending: false }).limit(50);
                 postsData = data || [];
             }
 
@@ -820,6 +838,14 @@
                 const date = new Date(post.created_at).toLocaleDateString();
                 const author = profileMap[post.user_id] || { username: 'Unknown', avatar_url: 'https://via.placeholder.com/40' };
                 
+                // Reaction Logic processing
+                const resonates = post.post_reactions ? post.post_reactions.filter(r => r.reaction_type === 'resonate') : [];
+                const sympathies = post.post_reactions ? post.post_reactions.filter(r => r.reaction_type === 'sympathy') : [];
+                const userResonated = currentSession && resonates.some(r => r.user_id === currentSession.user.id);
+                const userSympathized = currentSession && sympathies.some(r => r.user_id === currentSession.user.id);
+                const resonateColor = userResonated ? '#f1c40f' : '#888';
+                const sympathyColor = userSympathized ? '#e74c3c' : '#888';
+
                 const div = document.createElement('div');
                 div.className = 'update-post';
                 div.innerHTML = `
@@ -837,6 +863,15 @@
                         </div>
                     </div>
                     <p style="margin-top: 5px; font-size: 1.05rem;">${post.content}</p>
+                    
+                    <div style="display: flex; gap: 20px; margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee;">
+                        <button onclick="toggleReaction('${post.id}', 'resonate', ${userResonated})" style="background:none; border:none; cursor:pointer; color:${resonateColor}; font-size:1.1rem; display:flex; align-items:center; gap:6px; padding:0;" title="Resonate (Energy)">
+                            <i class="fa-solid fa-bolt"></i> <span style="font-size:0.95rem; font-weight:bold;">${resonates.length}</span>
+                        </button>
+                        <button onclick="toggleReaction('${post.id}', 'sympathy', ${userSympathized})" style="background:none; border:none; cursor:pointer; color:${sympathyColor}; font-size:1.1rem; display:flex; align-items:center; gap:6px; padding:0;" title="Sympathy (Hug)">
+                            <i class="fa-solid fa-hand-holding-heart"></i> <span style="font-size:0.95rem; font-weight:bold;">${sympathies.length}</span>
+                        </button>
+                    </div>
                 `;
                 container.appendChild(div);
             });
@@ -846,7 +881,7 @@
             const container = document.getElementById('profile-feed-display');
             container.innerHTML = '<p style="text-align: center; color: #777;">Loading posts...</p>';
             
-            const { data: posts, error } = await supabaseClient.from('posts').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+            const { data: posts, error } = await supabaseClient.from('posts').select('*, post_reactions(*)').eq('user_id', userId).order('created_at', { ascending: false });
                 
             if (error) {
                 container.innerHTML = '<p style="text-align: center; color: red;">Failed to load posts.</p>';
@@ -860,6 +895,14 @@
             container.innerHTML = '';
             posts.forEach(post => {
                 const date = new Date(post.created_at).toLocaleDateString();
+                
+                const resonates = post.post_reactions ? post.post_reactions.filter(r => r.reaction_type === 'resonate') : [];
+                const sympathies = post.post_reactions ? post.post_reactions.filter(r => r.reaction_type === 'sympathy') : [];
+                const userResonated = currentSession && resonates.some(r => r.user_id === currentSession.user.id);
+                const userSympathized = currentSession && sympathies.some(r => r.user_id === currentSession.user.id);
+                const resonateColor = userResonated ? '#f1c40f' : '#888';
+                const sympathyColor = userSympathized ? '#e74c3c' : '#888';
+
                 const div = document.createElement('div');
                 div.className = 'update-post';
                 div.innerHTML = `
@@ -871,18 +914,26 @@
                         </div>
                     </div>
                     <p style="margin-top: 0; font-size: 1.05rem;">${post.content}</p>
+                    
+                    <div style="display: flex; gap: 20px; margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee;">
+                        <button onclick="toggleReaction('${post.id}', 'resonate', ${userResonated})" style="background:none; border:none; cursor:pointer; color:${resonateColor}; font-size:1.1rem; display:flex; align-items:center; gap:6px; padding:0;" title="Resonate (Energy)">
+                            <i class="fa-solid fa-bolt"></i> <span style="font-size:0.95rem; font-weight:bold;">${resonates.length}</span>
+                        </button>
+                        <button onclick="toggleReaction('${post.id}', 'sympathy', ${userSympathized})" style="background:none; border:none; cursor:pointer; color:${sympathyColor}; font-size:1.1rem; display:flex; align-items:center; gap:6px; padding:0;" title="Sympathy (Hug)">
+                            <i class="fa-solid fa-hand-holding-heart"></i> <span style="font-size:0.95rem; font-weight:bold;">${sympathies.length}</span>
+                        </button>
+                    </div>
                 `;
                 container.appendChild(div);
             });
         }
 
-        // --- NEW: Load a Single Shared Post ---
         async function loadSinglePost(postId) {
             openTab('single-post-view');
             const container = document.getElementById('single-post-display');
             container.innerHTML = '<p style="text-align: center; color: #777;">Loading post...</p>';
 
-            const { data: post, error } = await supabaseClient.from('posts').select('*').eq('id', postId).single();
+            const { data: post, error } = await supabaseClient.from('posts').select('*, post_reactions(*)').eq('id', postId).single();
 
             if (error || !post) {
                 container.innerHTML = '<p style="text-align: center; color: red; font-weight: bold;">Post not found, or it is locked to a private network.</p><div style="text-align:center; margin-top:20px;"><button class="action-btn" onclick="openTab(\'community\')">Go to Dashboard</button></div>';
@@ -892,6 +943,13 @@
             const { data: author } = await supabaseClient.from('profiles').select('*').eq('id', post.user_id).single();
             const date = new Date(post.created_at).toLocaleDateString();
             const authorData = author || { username: 'Unknown', avatar_url: 'https://via.placeholder.com/40' };
+
+            const resonates = post.post_reactions ? post.post_reactions.filter(r => r.reaction_type === 'resonate') : [];
+            const sympathies = post.post_reactions ? post.post_reactions.filter(r => r.reaction_type === 'sympathy') : [];
+            const userResonated = currentSession && resonates.some(r => r.user_id === currentSession.user.id);
+            const userSympathized = currentSession && sympathies.some(r => r.user_id === currentSession.user.id);
+            const resonateColor = userResonated ? '#f1c40f' : '#888';
+            const sympathyColor = userSympathized ? '#e74c3c' : '#888';
 
             container.innerHTML = `
                 <div class="update-post">
@@ -905,6 +963,15 @@
                         </div>
                     </div>
                     <p style="margin-top: 15px; font-size: 1.25rem; line-height: 1.5;">${post.content}</p>
+
+                    <div style="display: flex; gap: 20px; margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee;">
+                        <button onclick="toggleReaction('${post.id}', 'resonate', ${userResonated})" style="background:none; border:none; cursor:pointer; color:${resonateColor}; font-size:1.1rem; display:flex; align-items:center; gap:6px; padding:0;" title="Resonate (Energy)">
+                            <i class="fa-solid fa-bolt"></i> <span style="font-size:0.95rem; font-weight:bold;">${resonates.length}</span>
+                        </button>
+                        <button onclick="toggleReaction('${post.id}', 'sympathy', ${userSympathized})" style="background:none; border:none; cursor:pointer; color:${sympathyColor}; font-size:1.1rem; display:flex; align-items:center; gap:6px; padding:0;" title="Sympathy (Hug)">
+                            <i class="fa-solid fa-hand-holding-heart"></i> <span style="font-size:0.95rem; font-weight:bold;">${sympathies.length}</span>
+                        </button>
+                    </div>
                 </div>
                 <div style="text-align: center; margin-top: 30px;">
                     <button class="action-btn" onclick="openTab('community')">Enter the Community Dashboard</button>
