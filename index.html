@@ -202,23 +202,22 @@
             <!-- Auth Screen (For logged out users) -->
             <div id="auth-section" class="auth-container">
                 <h3>Join the Conversation</h3>
-                <p>Sign up or log in to connect, share, and view the public dashboard.</p>
+                <p>Enter your email and password to log in or create a new account.</p>
                 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <input type="email" id="auth-email" placeholder="Email Address" required style="flex: 1;">
-                    <input type="password" id="auth-password" placeholder="Password" required style="flex: 1;">
+                    <input type="email" id="auth-email" placeholder="Email Address" required style="flex: 1;" onkeypress="if(event.key === 'Enter') handleAuth()">
+                    <input type="password" id="auth-password" placeholder="Password" required style="flex: 1;" onkeypress="if(event.key === 'Enter') handleAuth()">
                 </div>
-                <div style="margin-top: 20px; display: flex; gap: 10px;">
-                    <button type="button" class="action-btn" onclick="signUp()">Sign Up</button>
-                    <button type="button" class="action-btn" onclick="logIn()" style="background-color: #28a745;">Log In</button>
+                <div style="margin-top: 20px;">
+                    <button type="button" class="action-btn" onclick="handleAuth()" style="width: 100%; font-size: 1.1rem; padding: 12px;">Continue</button>
                 </div>
                 <p id="auth-error" style="color: red; margin-top: 10px; font-weight: bold;"></p>
                 <p id="auth-success" style="color: green; margin-top: 10px; font-weight: bold;"></p>
             </div>
 
-            <!-- NEW: Expanded Account Configuration Screen -->
+            <!-- Expanded Account Configuration Screen -->
             <div id="account-config-section" class="config-container" style="display: none; background-color: #eef2f5; border-color: #b8c2cc;">
                 <h3><i class="fa-solid fa-user-pen"></i> Set Up Your Profile</h3>
-                <p>Welcome! Please complete your profile details before posting.</p>
+                <p>Update your profile details below.</p>
                 
                 <label style="font-size: 0.9rem; font-weight: bold;">Choose a Username:</label>
                 <input type="text" id="config-username" placeholder="e.g. johndoe" required style="width: 100%; margin-bottom: 15px; box-sizing: border-box;">
@@ -245,10 +244,11 @@
                 <label style="font-size: 0.9rem; font-weight: bold;">Personal Quote (Max 50 characters):</label>
                 <input type="text" id="config-quote" maxlength="50" placeholder="e.g. Pursuing a state unruled by desire." style="width: 100%; margin-bottom: 15px; box-sizing: border-box;">
 
-                <label style="font-size: 0.9rem; font-weight: bold;">Profile Picture (Optional):</label>
+                <label style="font-size: 0.9rem; font-weight: bold;">Update Profile Picture (Optional):</label>
                 <input type="file" id="config-avatar" accept="image/*" style="border: none; padding: 0; width: 100%; margin-bottom: 20px;">
 
-                <button type="button" class="action-btn" onclick="completeAccountSetup()" style="width: 100%; font-size: 1.1rem; padding: 12px;">Complete Setup</button>
+                <button type="button" class="action-btn" onclick="completeAccountSetup()" style="width: 100%; font-size: 1.1rem; padding: 12px;">Save Profile</button>
+                <button type="button" id="config-cancel-btn" class="action-btn" onclick="cancelEditProfile()" style="width: 100%; font-size: 1.1rem; padding: 12px; margin-top: 10px; background-color: #6c757d; display: none;">Cancel</button>
                 <p id="config-error" style="color: red; margin-top: 10px; font-weight: bold;"></p>
                 <p id="config-success" style="color: green; margin-top: 10px; font-weight: bold;"></p>
             </div>
@@ -282,14 +282,17 @@
             </div>
 
             <div id="profile-unlocked" style="display: none;">
-                <!-- NEW: Redesigned Profile Header -->
+                <!-- Redesigned Profile Header -->
                 <div class="profile-header-container">
                     <img id="profile-page-avatar" src="https://via.placeholder.com/120" alt="Avatar">
                     
                     <div class="profile-info">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                             <h1 id="profile-page-username" style="margin: 0; font-size: 1.8rem; color: #0056b3;">@username</h1>
-                            <button id="logout-btn-profile" type="button" class="action-btn" onclick="logOut()" style="background-color: #d9534f; padding: 5px 10px; font-size: 0.8rem;">Log Out</button>
+                            <div style="display: flex; gap: 10px;">
+                                <button id="edit-btn-profile" type="button" class="action-btn" onclick="editProfile()" style="background-color: #f0ad4e; padding: 5px 10px; font-size: 0.8rem; display: none;"><i class="fa-solid fa-pen"></i> Edit</button>
+                                <button id="logout-btn-profile" type="button" class="action-btn" onclick="logOut()" style="background-color: #d9534f; padding: 5px 10px; font-size: 0.8rem;">Log Out</button>
+                            </div>
                         </div>
                         
                         <h3 id="profile-page-fullname" style="margin: 5px 0; color: #333; font-size: 1.2rem;">Full Name</h3>
@@ -390,12 +393,6 @@
             })
             .catch(() => document.getElementById('visitor-count').innerText = "hidden by privacy settings");
 
-        function switchFeed(feedType) {
-            document.getElementById('btn-joined-feed').classList.remove('active');
-            document.getElementById('btn-public-feed').classList.remove('active');
-            document.getElementById('btn-' + feedType + '-feed').classList.add('active');
-            document.getElementById('community-feed-display').innerHTML = '<p style="text-align: center; color: #777;">Loading ' + feedType + ' posts...</p>';
-        }
     </script>
 
     <!-- Updates Feed -->
@@ -473,9 +470,13 @@
                         document.getElementById('header-username').innerText = `${profile.username}`;
                         if (profile.avatar_url) document.getElementById('header-avatar').src = profile.avatar_url;
                         
+                        // Hide auth/config, show dashboard
                         authSec.style.display = 'none';
                         configSec.style.display = 'none';
                         dashSec.style.display = 'block';
+
+                        // Auto-load public posts when dashboard is shown!
+                        fetchCommunityPosts('public');
                     } else {
                         document.getElementById('header-username').innerText = `Finish Setup`;
                         
@@ -499,8 +500,8 @@
             }
         }
 
-        async function signUp() {
-            const email = document.getElementById('auth-email').value;
+        async function handleAuth() {
+            const email = document.getElementById('auth-email').value.trim();
             const password = document.getElementById('auth-password').value;
             const errorMsg = document.getElementById('auth-error');
             const successMsg = document.getElementById('auth-success');
@@ -514,34 +515,33 @@
                 return;
             }
 
-            const { data, error } = await supabaseClient.auth.signUp({ email, password });
-            if (error) {
-                errorMsg.innerText = error.message;
-                successMsg.innerText = '';
-            } else {
-                if (data.session) {
-                    successMsg.innerText = 'Account created! Loading setup...';
-                    await checkUserStatus(); 
-                } else {
-                    successMsg.innerText = "Success! Please check your email inbox to confirm your account.";
-                }
-            }
-        }
-
-        async function logIn() {
-            const email = document.getElementById('auth-email').value;
-            const password = document.getElementById('auth-password').value;
-            const errorMsg = document.getElementById('auth-error');
-            const successMsg = document.getElementById('auth-success');
+            const { data: signInData, error: signInError } = await supabaseClient.auth.signInWithPassword({ email, password });
             
-            errorMsg.innerText = 'Logging in...';
-            successMsg.innerText = '';
-
-            const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-            if (error) {
-                errorMsg.innerText = error.message;
+            if (signInError) {
+                if (signInError.message.includes('Invalid login credentials')) {
+                    const { data: signUpData, error: signUpError } = await supabaseClient.auth.signUp({ email, password });
+                    
+                    if (signUpError) {
+                        if (signUpError.message.includes('User already registered')) {
+                            errorMsg.innerText = "Incorrect password. Please try again.";
+                        } else {
+                            errorMsg.innerText = signUpError.message;
+                        }
+                        successMsg.innerText = '';
+                    } else {
+                        if (signUpData.session) {
+                            successMsg.innerText = 'Account created! Loading setup...';
+                            await checkUserStatus(); 
+                        } else {
+                            successMsg.innerText = "Success! Please check your email inbox to confirm your account.";
+                        }
+                    }
+                } else {
+                    errorMsg.innerText = signInError.message;
+                    successMsg.innerText = '';
+                }
             } else {
-                errorMsg.innerText = '';
+                successMsg.innerText = 'Logging in...';
             }
         }
 
@@ -550,7 +550,35 @@
             openTab('community');
         }
 
-        // NEW: Pulls in the extra fields and inserts to DB
+        // Edit Profile Toggle
+        function editProfile() {
+            if (!currentProfile) return;
+            
+            // Pre-fill the form with existing data
+            document.getElementById('config-username').value = currentProfile.username || '';
+            document.getElementById('config-fullname').value = currentProfile.full_name || '';
+            document.getElementById('config-location').value = currentProfile.location || '';
+            document.getElementById('config-age').value = currentProfile.age_range || '';
+            document.getElementById('config-occupation').value = currentProfile.occupation || '';
+            document.getElementById('config-quote').value = currentProfile.quote || '';
+            
+            // Show cancel button since this is an edit, not a required first setup
+            document.getElementById('config-cancel-btn').style.display = 'block';
+
+            // Swap views
+            openTab('community');
+            document.getElementById('dashboard-section').style.display = 'none';
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('account-config-section').style.display = 'block';
+        }
+
+        function cancelEditProfile() {
+            document.getElementById('account-config-section').style.display = 'none';
+            document.getElementById('dashboard-section').style.display = 'block';
+            document.getElementById('config-cancel-btn').style.display = 'none';
+        }
+
+        // Updated to use .upsert() instead of .insert() so it updates existing profiles
         async function completeAccountSetup() {
             const username = document.getElementById('config-username').value.trim().toLowerCase();
             const fullName = document.getElementById('config-fullname').value.trim();
@@ -572,7 +600,8 @@
                 return;
             }
 
-            let finalAvatarUrl = 'https://via.placeholder.com/120';
+            // Default to existing avatar, or a placeholder if brand new
+            let finalAvatarUrl = currentProfile ? currentProfile.avatar_url : 'https://via.placeholder.com/120';
             
             if (avatarFile) {
                 successMsg.innerText = 'Uploading picture...';
@@ -586,7 +615,7 @@
                 }
             }
 
-            const { error: profileError } = await supabaseClient.from('profiles').insert([
+            const { error: profileError } = await supabaseClient.from('profiles').upsert([
                 { 
                     id: currentSession.user.id, 
                     username: username, 
@@ -604,6 +633,7 @@
                 successMsg.innerText = '';
             } else {
                 successMsg.innerText = "Profile saved! Redirecting to dashboard...";
+                document.getElementById('config-cancel-btn').style.display = 'none'; // reset button
                 setTimeout(() => checkUserStatus(), 1000); 
             }
         }
@@ -641,11 +671,9 @@
             const { data: profile } = await supabaseClient.from('profiles').select('*').eq('username', username).single();
             
             if (profile) {
-                // Populate core info
                 document.getElementById('profile-page-username').innerText = `@${profile.username}`;
                 document.getElementById('profile-page-avatar').src = profile.avatar_url || 'https://via.placeholder.com/120';
                 
-                // Populate new detailed info
                 document.getElementById('profile-page-fullname').innerText = profile.full_name || 'Name not provided';
                 document.getElementById('profile-page-location').innerText = profile.location || 'Location not specified';
                 document.getElementById('profile-page-age').innerText = profile.age_range || 'Age hidden';
@@ -659,15 +687,17 @@
                     quoteContainer.style.display = 'none';
                 }
 
-                // Hide logout button if viewing someone else
                 const logoutBtn = document.getElementById('logout-btn-profile');
+                const editBtn = document.getElementById('edit-btn-profile');
+                
                 if (currentProfile && currentProfile.username === profile.username) {
                     logoutBtn.style.display = 'inline-block';
+                    editBtn.style.display = 'inline-block';
                 } else {
                     logoutBtn.style.display = 'none';
+                    editBtn.style.display = 'none';
                 }
                 
-                // Fetch this specific user's posts
                 fetchUserPosts(profile.id);
 
             } else {
@@ -675,7 +705,69 @@
             }
         }
 
-        // NEW: Fetch posts for the profile page
+        // NEW: Handles fetching posts for the main Community tab dashboard
+        function switchFeed(feedType) {
+            document.getElementById('btn-joined-feed').classList.remove('active');
+            document.getElementById('btn-public-feed').classList.remove('active');
+            document.getElementById('btn-' + feedType + '-feed').classList.add('active');
+            fetchCommunityPosts(feedType);
+        }
+
+        async function fetchCommunityPosts(feedType) {
+            const container = document.getElementById('community-feed-display');
+            container.innerHTML = '<p style="text-align: center; color: #777;">Loading posts...</p>';
+
+            if (feedType === 'joined') {
+                container.innerHTML = '<p style="text-align: center; color: #777;">The Joined Network feed is coming soon!</p>';
+                return;
+            }
+
+            // Fetch public posts
+            const { data: posts, error: postsError } = await supabaseClient
+                .from('posts')
+                .select('*')
+                .eq('is_public', true)
+                .order('created_at', { ascending: false })
+                .limit(50);
+
+            if (postsError || !posts || posts.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #777;">No posts available yet. Be the first to share a thought!</p>';
+                return;
+            }
+
+            // Fetch profiles of the people who posted
+            const userIds = [...new Set(posts.map(p => p.user_id))];
+            const { data: profiles } = await supabaseClient
+                .from('profiles')
+                .select('id, username, avatar_url')
+                .in('id', userIds);
+
+            const profileMap = {};
+            if (profiles) {
+                profiles.forEach(p => profileMap[p.id] = p);
+            }
+
+            container.innerHTML = '';
+            posts.forEach(post => {
+                const date = new Date(post.created_at).toLocaleDateString();
+                const author = profileMap[post.user_id] || { username: 'Unknown', avatar_url: 'https://via.placeholder.com/40' };
+                
+                const div = document.createElement('div');
+                div.className = 'update-post';
+                div.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                        <img src="${author.avatar_url}" style="width: 40px; height: 40px; border-radius: 50%; cursor: pointer; object-fit: cover;" onclick="window.history.pushState({}, '', '?u=${author.username}'); loadSpecificProfile('${author.username}');">
+                        <div>
+                            <span style="font-weight: bold; cursor: pointer; color: #0056b3;" onclick="window.history.pushState({}, '', '?u=${author.username}'); loadSpecificProfile('${author.username}');">@${author.username}</span>
+                            <span style="font-size: 0.8rem; color: #888; display: block;">${date}</span>
+                        </div>
+                    </div>
+                    <p style="margin-top: 5px; font-size: 1.05rem;">${post.content}</p>
+                `;
+                container.appendChild(div);
+            });
+        }
+
         async function fetchUserPosts(userId) {
             const container = document.getElementById('profile-feed-display');
             container.innerHTML = '<p style="text-align: center; color: #777;">Loading posts...</p>';
@@ -727,6 +819,13 @@
             } else {
                 alert("Posted successfully!");
                 document.getElementById('new-post-content').value = ''; 
+                
+                // Refresh feeds instantly
+                if (document.getElementById('community').classList.contains('active')) {
+                    fetchCommunityPosts('public');
+                } else if (currentProfile && document.getElementById('user-profile').classList.contains('active')) {
+                    fetchUserPosts(currentSession.user.id);
+                }
             }
         }
     </script>
