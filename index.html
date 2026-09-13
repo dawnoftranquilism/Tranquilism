@@ -10,17 +10,9 @@
     <meta name="keywords" content="Tranquilism, Karl Smith, Discourse of the Tranquilist, post-scarcity, philosophy, anti-consumption, simple living, syndicalism">
     <meta name="author" content="Karl Smith">
     
-    <!-- Canonical Link -->
     <link rel="canonical" href="https://www.dawnoftranquilism.com">
 
-    <!-- Open Graph / Facebook / Discord -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://www.dawnoftranquilism.com">
-    <meta property="og:title" content="Tranquilism | Defining a Modern Philosophy">
-    <meta property="og:description" content="A third path beyond capitalism and socialism. Every soul deserves a 'floor of enough'.">
-    <meta property="og:image" content="https://dawnoftranquilism.github.io/Tranquilism/favicon.png">
-
-    <!-- Supabase CDN (Added for Backend Services) -->
+    <!-- Supabase CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- Twitter / X Card Data -->
@@ -35,31 +27,6 @@
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
-    <!-- JSON-LD Schema (For Google's Knowledge Graph) -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      "name": "Tranquilism",
-      "url": "https://www.dawnoftranquilism.com",
-      "description": "The official home of Tranquilism and excerpts from Discourse of the Tranquilist.",
-      "author": {
-        "@type": "Person",
-        "name": "Karl Smith",
-        "url": "https://www.dawnoftranquilism.com"
-      },
-      "sameAs": [
-        "https://www.youtube.com/channel/UC6okFnrHZKjmLMnAYrTY7GQ",
-        "https://instagram.com/dawnoftranquilism",
-        "https://bsky.app/profile/tranquilism.bsky.social",
-        "https://x.com/tranquilistsuni",
-        "https://www.reddit.com/u/Tranquility-Now/s/3vzzFn1ZZK",
-        "https://www.facebook.com/profile.php?id=61594035628769",
-        "https://www.threads.net/@dawnoftranquilism",
-        "https://www.twitch.tv/dawnoftranquilism"
-      ]
-    }
-    </script>
     <style>
         body {
             font-family: 'Helvetica Neue', Arial, sans-serif;
@@ -79,6 +46,8 @@
             background-repeat: repeat;
             z-index: -1; 
         }
+
+        /* --- Navigation Layout --- */
         .navbar {
             background-color: rgba(255, 255, 255, 0.9);
             padding: 20px;
@@ -94,25 +63,51 @@
             margin-bottom: 20px; 
             display: block; 
         }
-        .navbar-buttons {
-            display: flex;
-            justify-content: center;
+        
+        .navbar-buttons { 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
             flex-wrap: wrap; 
             gap: 15px; 
+            width: 100%;
+            max-width: 1000px;
         }
-        .navbar button {
-            background: none;
-            border: none;
-            font-size: 1.1rem;
+        .navbar button { background: none; border: none; font-size: 1.1rem; cursor: pointer; color: #555; font-weight: bold; padding: 5px 10px; }
+        .navbar button:hover, .navbar button.active { color: #0056b3; text-decoration: underline; }
+
+        /* Auth Menu Styles (Now inline with buttons!) */
+        .user-greeting {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             cursor: pointer;
-            color: #555;
+            padding: 5px 12px;
+            border-radius: 20px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            transition: background 0.2s;
+        }
+        .user-greeting:hover {
+            background-color: #e9ecef;
+        }
+        .user-greeting img {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .user-greeting span {
             font-weight: bold;
-            padding: 5px 10px;
+            color: #2c3e50;
+            font-size: 0.95rem;
         }
-        .navbar button:hover, .navbar button.active {
-            color: #0056b3;
-            text-decoration: underline;
+        .nav-divider {
+            border-left: 2px solid #ccc; 
+            height: 25px; 
+            margin: 0 5px;
         }
+
         .container {
             max-width: 800px;
             margin: 40px auto;
@@ -125,116 +120,49 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         h1, h2, h3, h4, h5 { color: #2c3e50; }
-        .update-post {
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 15px;
-            margin-bottom: 15px;
-        }
         
         /* Auth & Community Dashboard Styles */
-        .auth-container, .post-creator {
+        .auth-container, .post-creator, .config-container {
             background: rgba(255,255,255,0.9);
             padding: 20px;
             border-radius: 8px;
             border: 1px solid #ddd;
             margin-bottom: 20px;
         }
-        .feed-toggle {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .feed-toggle button {
-            flex: 1;
-            padding: 10px;
-            background-color: #e9ecef;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        .feed-toggle button.active {
-            background-color: #0056b3;
-            color: white;
-            border-color: #0056b3;
-        }
+        .feed-toggle { display: flex; gap: 10px; margin-bottom: 20px; }
+        .feed-toggle button { flex: 1; padding: 10px; background-color: #e9ecef; border: 1px solid #ccc; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .feed-toggle button.active { background-color: #0056b3; color: white; border-color: #0056b3; }
 
-        form {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin-top: 20px;
-        }
-        input, textarea {
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-family: inherit;
-        }
-        button[type="submit"], .action-btn {
-            background-color: #0056b3;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1rem;
-        }
+        form { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
+        input, textarea { padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-family: inherit; }
+        button[type="submit"], .action-btn { background-color: #0056b3; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 1rem; }
         button[type="submit"]:hover, .action-btn:hover { background-color: #004494; }
         
-        .footer-nav {
-            background-color: rgba(255, 255, 255, 0.9);
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px; 
-            margin-top: 40px;
-            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
-        }
-        .footer-nav button {
-            background: none;
-            border: none;
-            font-size: 1.1rem;
-            cursor: pointer;
-            color: #555;
-            font-weight: bold;
-            padding: 5px 10px;
-        }
-        .footer-nav button:hover, .footer-nav button.active {
-            color: #0056b3;
-            text-decoration: underline;
-        }
-        .social-icons {
-            display: flex;
-            gap: 25px;
-        }
-        .social-icons a {
-            color: #555; 
-            font-size: 1.8rem; 
-            text-decoration: none;
-            transition: color 0.2s ease;
-        }
+        /* User Profile Tab */
+        .profile-header { text-align: center; margin-bottom: 30px; }
+        .profile-header img { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #0056b3; }
+        .locked-profile { text-align: center; padding: 40px 20px; background: #f8f9fa; border-radius: 10px; border: 1px dashed #ccc; }
+
+        .footer-nav { background-color: rgba(255, 255, 255, 0.9); padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 20px; margin-top: 40px; box-shadow: 0 -2px 5px rgba(0,0,0,0.1); }
+        .social-icons { display: flex; gap: 25px; }
+        .social-icons a { color: #555; font-size: 1.8rem; text-decoration: none; transition: color 0.2s ease; }
         .social-icons a:hover { color: #0056b3; }
         
         @media (max-width: 768px) {
             .container { margin: 20px auto; padding: 20px; width: 90%; box-sizing: border-box; }
             .navbar { padding: 15px 5px; }
             .navbar .logo { width: 100%; height: auto; margin-bottom: 15px; }
-            .navbar-buttons { gap: 2px; }
+            .navbar-buttons { gap: 5px; }
             .navbar button, .footer-nav button { font-size: 0.85rem; margin: 0; padding: 5px; }
+            .nav-divider { display: none; } /* Hides the vertical line on mobile to save space */
             input, textarea { width: 100%; box-sizing: border-box; }
-            h1 { font-size: 2rem; }
         }
-        .responsive-video {
-            width: 100%;
-            height: auto;
-            aspect-ratio: 16 / 9;
-        }
+        .responsive-video { width: 100%; height: auto; aspect-ratio: 16 / 9; }
     </style>
 </head>
 <body>
 
+    <!-- Main Navigation Header -->
     <div class="navbar">
         <img src="Tranquilism (2).png" alt="Tranquilism Banner" class="logo">
         <div class="navbar-buttons">
@@ -243,6 +171,21 @@
             <button class="tab-btn" onclick="openTab('updates')">Updates</button>
             <button class="tab-btn" onclick="openTab('email')">Join Email List</button>
             <button class="tab-btn" onclick="openTab('contact')">Contact</button>
+            
+            <!-- Auth sits right here, immediately after contact! -->
+            <span class="nav-divider"></span>
+            
+            <div id="header-login-area" style="display: inline-block;">
+                <button class="tab-btn" onclick="openTab('community')" style="color: #0056b3; font-weight: 900;"><i class="fa-solid fa-user-circle"></i> Log In</button>
+            </div>
+            
+            <div id="logged-in-menu" style="display: none; align-items: center; gap: 5px;">
+                <div id="user-greeting" class="user-greeting" onclick="goToMyProfile()">
+                    <img id="header-avatar" src="https://via.placeholder.com/30" alt="Avatar">
+                    <span id="header-username">Hi, User</span>
+                </div>
+                <button class="tab-btn" onclick="logOut()" style="color: #d9534f;" title="Log Out"><i class="fa-solid fa-right-from-bracket"></i></button>
+            </div>
         </div>
     </div>
 
@@ -308,12 +251,15 @@
         <div id="community" class="tab-content">
             <h2>Community Dashboard</h2>
             
+            <!-- Auth Screen (For logged out users) -->
             <div id="auth-section" class="auth-container">
                 <h3>Join the Conversation</h3>
                 <p>Sign up or log in to connect, share, and view the public dashboard.</p>
-                <input type="email" id="auth-email" placeholder="Your Email Address" required>
-                <input type="password" id="auth-password" placeholder="Create a Password" required>
-                <div style="margin-top: 10px; display: flex; gap: 10px;">
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <input type="email" id="auth-email" placeholder="Email Address" required style="flex: 1;">
+                    <input type="password" id="auth-password" placeholder="Password" required style="flex: 1;">
+                </div>
+                <div style="margin-top: 20px; display: flex; gap: 10px;">
                     <button type="button" class="action-btn" onclick="signUp()">Sign Up</button>
                     <button type="button" class="action-btn" onclick="logIn()" style="background-color: #28a745;">Log In</button>
                 </div>
@@ -321,43 +267,70 @@
                 <p id="auth-success" style="color: green; margin-top: 10px; font-weight: bold;"></p>
             </div>
 
-            <div id="dashboard-section" style="display: none;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <p>Welcome back! <span id="user-display-email" style="font-weight: bold;"></span></p>
-                    <button type="button" class="action-btn" onclick="logOut()" style="background-color: #d9534f; padding: 5px 10px;">Log Out</button>
-                </div>
+            <!-- Account Configuration Screen -->
+            <div id="account-config-section" class="config-container" style="display: none; background-color: #eef2f5; border-color: #b8c2cc;">
+                <h3><i class="fa-solid fa-user-pen"></i> Set Up Your Profile</h3>
+                <p>Welcome! Before you can post, please choose a username so others know who you are.</p>
+                
+                <label style="font-size: 0.9rem; font-weight: bold;">Choose a Username:</label>
+                <input type="text" id="config-username" placeholder="e.g. karlsmith" required style="width: 100%; margin-bottom: 15px; box-sizing: border-box;">
+                
+                <label style="font-size: 0.9rem; font-weight: bold;">Profile Picture (Optional):</label>
+                <input type="file" id="config-avatar" accept="image/*" style="border: none; padding: 0; width: 100%; margin-bottom: 15px;">
 
+                <button type="button" class="action-btn" onclick="completeAccountSetup()" style="width: 100%;">Complete Setup</button>
+                <p id="config-error" style="color: red; margin-top: 10px; font-weight: bold;"></p>
+                <p id="config-success" style="color: green; margin-top: 10px; font-weight: bold;"></p>
+            </div>
+
+            <!-- Dashboard Screen (For fully configured logged-in users) -->
+            <div id="dashboard-section" style="display: none;">
                 <div class="post-creator">
                     <textarea id="new-post-content" rows="3" placeholder="Share a thought, image link, or video link..."></textarea>
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
-                        <label style="font-size: 0.9rem;">
-                            <input type="checkbox" id="is-public-checkbox" checked> 
-                            Post to Public Dashboard
-                        </label>
+                        <label style="font-size: 0.9rem;"><input type="checkbox" id="is-public-checkbox" checked> Post to Public Dashboard</label>
                         <button type="button" class="action-btn" onclick="submitPost()">Post</button>
                     </div>
                 </div>
-
                 <div class="feed-toggle">
                     <button type="button" id="btn-joined-feed" onclick="switchFeed('joined')">Joined Network</button>
                     <button type="button" id="btn-public-feed" class="active" onclick="switchFeed('public')">Public Dashboard</button>
                 </div>
-
                 <div id="community-feed-display">
                     <p style="text-align: center; color: #777;">Loading posts...</p>
                 </div>
             </div>
         </div>
 
-        <!-- 3. Updates Feed -->
-        <div id="updates" class="tab-content">
-            <h2>Recent Updates</h2>
-            <div id="updates-feed">
-                <p>Loading updates...</p>
+        <!-- 3. Personal Profile View -->
+        <div id="user-profile" class="tab-content">
+            <div id="profile-locked" class="locked-profile" style="display: none;">
+                <i class="fa-solid fa-lock" style="font-size: 3rem; color: #ccc; margin-bottom: 15px;"></i>
+                <h2>Sign up to see this user's posts</h2>
+                <p>Join the Tranquilism community to connect with other members and share your thoughts.</p>
+                <button class="action-btn" onclick="openTab('community')" style="margin-top: 15px;">Go to Sign Up</button>
+            </div>
+
+            <div id="profile-unlocked" style="display: none;">
+                <div class="profile-header">
+                    <img id="profile-page-avatar" src="https://via.placeholder.com/120" alt="Avatar">
+                    <h1 id="profile-page-username">@username</h1>
+                </div>
+                <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ddd;">
+                <h3>Recent Posts</h3>
+                <div id="profile-feed-display">
+                    <p style="text-align: center; color: #777;">Posts will appear here...</p>
+                </div>
             </div>
         </div>
 
-        <!-- 4. Join Email List -->
+        <!-- 4. Updates Feed -->
+        <div id="updates" class="tab-content">
+            <h2>Recent Updates</h2>
+            <div id="updates-feed"><p>Loading updates...</p></div>
+        </div>
+
+        <!-- 5. Join Email List -->
         <div id="email" class="tab-content">
             <h2>Join the Email List</h2>
             <p>Subscribe to receive the latest updates, essays, and news directly to your inbox.</p>
@@ -370,7 +343,7 @@
             </form>
         </div>
 
-        <!-- 5. Contact Form -->
+        <!-- 6. Contact Form -->
         <div id="contact" class="tab-content">
             <h2>Contact</h2>
             <p>Send a message directly to the author. Maximum 3000 characters.</p>
@@ -411,18 +384,18 @@
 
     <!-- UI Scripts -->
     <script>
-       function openTab(tabId) {
+        let currentSession = null;
+        let currentProfile = null;
+
+        function openTab(tabId) {
             const contents = document.querySelectorAll('.tab-content');
             contents.forEach(content => content.classList.remove('active'));
             const buttons = document.querySelectorAll('.tab-btn');
             buttons.forEach(button => button.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
-            const activeButtons = document.querySelectorAll(`button[onclick="openTab('${tabId}')"]`);
-            activeButtons.forEach(btn => btn.classList.add('active'));
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // Invisible Text-Based Visitor Counter
         fetch('https://script.google.com/macros/s/AKfycby-Dgn2Hp5rg8IE4prj2WEWfV6uOS_jT23nFmauhwVZ2otuT-D72vqD0uE9PlpApWxD/exec')
             .then(response => response.json())
             .then(data => {
@@ -436,11 +409,10 @@
                 document.getElementById('visitor-count').innerText = "hidden by privacy settings";
             });
 
-       function switchFeed(feedType) {
+        function switchFeed(feedType) {
             document.getElementById('btn-joined-feed').classList.remove('active');
             document.getElementById('btn-public-feed').classList.remove('active');
             document.getElementById('btn-' + feedType + '-feed').classList.add('active');
-            
             document.getElementById('community-feed-display').innerHTML = '<p style="text-align: center; color: #777;">Loading ' + feedType + ' posts...</p>';
         }
     </script>
@@ -464,10 +436,7 @@
                 })
                 .catch(error => {
                     document.getElementById('updates-feed').innerHTML = '<p>Feed currently unavailable.</p>';
-                    console.error('Error fetching updates:', error);
                 });
-        } else {
-             document.getElementById('updates-feed').innerHTML = '<p>Updates feed disabled on local files.</p>';
         }
     });
     </script>
@@ -480,13 +449,12 @@
         let supabaseClient;
         
         try {
-            if (typeof window.supabase === 'undefined') {
-                throw new Error("Library failed to load.");
-            }
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             
             supabaseClient.auth.onAuthStateChange((event, session) => {
-                updateUI(session);
+                currentSession = session;
+                updateHeaderUI(session);
+                checkURLForProfileLink(); 
             });
             checkUserStatus();
         } catch (err) {
@@ -494,23 +462,60 @@
         }
 
         async function checkUserStatus() {
-            if (!supabaseClient) return;
             const { data: { session } } = await supabaseClient.auth.getSession();
-            updateUI(session);
+            currentSession = session;
+            updateHeaderUI(session);
         }
 
-        function updateUI(session) {
-            const authSec = document.getElementById('auth-section');
-            const dashSec = document.getElementById('dashboard-section');
-            if (!authSec || !dashSec) return;
-            
-            if (session) {
-                authSec.style.display = 'none';
-                dashSec.style.display = 'block';
-                document.getElementById('user-display-email').innerText = session.user.email;
-            } else {
-                authSec.style.display = 'block';
-                dashSec.style.display = 'none';
+        async function updateHeaderUI(session) {
+            try {
+                const loginArea = document.getElementById('header-login-area');
+                const greetingArea = document.getElementById('logged-in-menu');
+                const authSec = document.getElementById('auth-section');
+                const configSec = document.getElementById('account-config-section');
+                const dashSec = document.getElementById('dashboard-section');
+
+                if (!authSec || !configSec || !dashSec) return;
+
+                if (session) {
+                    loginArea.style.display = 'none';
+                    greetingArea.style.display = 'flex';
+
+                    const { data: profile, error } = await supabaseClient
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', session.user.id)
+                        .maybeSingle();
+                    
+                    if (profile && profile.username) {
+                        currentProfile = profile;
+                        document.getElementById('header-username').innerText = `${profile.username}`;
+                        if (profile.avatar_url) document.getElementById('header-avatar').src = profile.avatar_url;
+                        
+                        authSec.style.display = 'none';
+                        configSec.style.display = 'none';
+                        dashSec.style.display = 'block';
+                    } else {
+                        document.getElementById('header-username').innerText = `Finish Setup`;
+                        
+                        authSec.style.display = 'none';
+                        dashSec.style.display = 'none';
+                        configSec.style.display = 'block';
+                        
+                        // Force the community tab open so they see the setup screen immediately
+                        openTab('community');
+                    }
+                } else {
+                    loginArea.style.display = 'inline-block';
+                    greetingArea.style.display = 'none';
+                    
+                    authSec.style.display = 'block';
+                    configSec.style.display = 'none';
+                    dashSec.style.display = 'none';
+                    currentProfile = null;
+                }
+            } catch(e) {
+                console.error("Error updating UI:", e);
             }
         }
 
@@ -523,22 +528,23 @@
             errorMsg.innerText = '';
             successMsg.innerText = 'Processing...';
 
-            if (!supabaseClient) {
-                errorMsg.innerText = 'Database client not found. Try refreshing the page.';
+            if (!email || !password) {
+                errorMsg.innerText = "Please enter an email and password.";
                 successMsg.innerText = '';
                 return;
             }
 
-            const { data, error } = await supabaseClient.auth.signUp({
-                email: email,
-                password: password,
-            });
-
+            const { data, error } = await supabaseClient.auth.signUp({ email, password });
             if (error) {
                 errorMsg.innerText = error.message;
                 successMsg.innerText = '';
             } else {
-                successMsg.innerText = "Success! Check your email for a confirmation link.";
+                if (data.session) {
+                    successMsg.innerText = 'Account created! Loading setup...';
+                    await checkUserStatus(); 
+                } else {
+                    successMsg.innerText = "Success! Please check your email inbox to confirm your account.";
+                }
             }
         }
 
@@ -548,14 +554,10 @@
             const errorMsg = document.getElementById('auth-error');
             const successMsg = document.getElementById('auth-success');
             
-            errorMsg.innerText = 'Processing...';
+            errorMsg.innerText = 'Logging in...';
             successMsg.innerText = '';
 
-            const { data, error } = await supabaseClient.auth.signInWithPassword({
-                email: email,
-                password: password,
-            });
-
+            const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
             if (error) {
                 errorMsg.innerText = error.message;
             } else {
@@ -565,12 +567,108 @@
 
         async function logOut() {
             await supabaseClient.auth.signOut();
+            openTab('community');
+        }
+
+        async function completeAccountSetup() {
+            const username = document.getElementById('config-username').value.trim().toLowerCase();
+            const avatarFile = document.getElementById('config-avatar').files[0];
+            const errorMsg = document.getElementById('config-error');
+            const successMsg = document.getElementById('config-success');
+
+            errorMsg.innerText = '';
+            successMsg.innerText = 'Saving profile...';
+
+            if (!username) {
+                errorMsg.innerText = "Please choose a username.";
+                successMsg.innerText = '';
+                return;
+            }
+
+            let finalAvatarUrl = 'https://via.placeholder.com/120';
+            
+            if (avatarFile) {
+                successMsg.innerText = 'Uploading picture...';
+                const fileExt = avatarFile.name.split('.').pop();
+                const fileName = `${currentSession.user.id}.${fileExt}`;
+                
+                const { error: uploadError } = await supabaseClient.storage.from('avatars').upload(fileName, avatarFile, { upsert: true });
+                if (!uploadError) {
+                    const { data: publicUrlData } = supabaseClient.storage.from('avatars').getPublicUrl(fileName);
+                    finalAvatarUrl = publicUrlData.publicUrl;
+                }
+            }
+
+            const { error: profileError } = await supabaseClient.from('profiles').insert([
+                { id: currentSession.user.id, username: username, avatar_url: finalAvatarUrl }
+            ]);
+            
+            if (profileError) {
+                errorMsg.innerText = "Error saving profile: " + profileError.message;
+                successMsg.innerText = '';
+            } else {
+                successMsg.innerText = "Profile saved! Redirecting to dashboard...";
+                setTimeout(() => checkUserStatus(), 1000); 
+            }
+        }
+
+        function goToMyProfile() {
+            if (currentProfile) {
+                window.history.pushState({}, '', `?u=${currentProfile.username}`);
+                loadSpecificProfile(currentProfile.username);
+            }
+        }
+
+        function checkURLForProfileLink() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetUsername = urlParams.get('u');
+            if (targetUsername) {
+                loadSpecificProfile(targetUsername);
+            }
+        }
+
+        async function loadSpecificProfile(username) {
+            openTab('user-profile');
+            
+            const lockedScreen = document.getElementById('profile-locked');
+            const unlockedScreen = document.getElementById('profile-unlocked');
+
+            if (!currentSession) {
+                lockedScreen.style.display = 'block';
+                unlockedScreen.style.display = 'none';
+                return;
+            }
+
+            lockedScreen.style.display = 'none';
+            unlockedScreen.style.display = 'block';
+            
+            const { data: profile } = await supabaseClient.from('profiles').select('*').eq('username', username).single();
+            
+            if (profile) {
+                document.getElementById('profile-page-username').innerText = `@${profile.username}`;
+                document.getElementById('profile-page-avatar').src = profile.avatar_url || 'https://via.placeholder.com/120';
+            } else {
+                document.getElementById('profile-page-username').innerText = "User not found";
+            }
         }
 
         async function submitPost() {
             const content = document.getElementById('new-post-content').value;
             const isPublic = document.getElementById('is-public-checkbox').checked;
-            alert("Database connection is next! Content: " + content + " | Public: " + isPublic);
+            
+            if (!content.trim()) return alert("Please write something before posting.");
+            if (!currentSession) return alert("Session expired. Please log in again.");
+
+            const { error } = await supabaseClient.from('posts').insert([
+                { user_id: currentSession.user.id, content: content, is_public: isPublic }
+            ]);
+
+            if (error) {
+                alert("Error saving post: " + error.message);
+            } else {
+                alert("Posted successfully!");
+                document.getElementById('new-post-content').value = ''; 
+            }
         }
     </script>
 </body>
